@@ -1,0 +1,263 @@
+
+/* 容器样式 */
+.registerContainer {
+  width: 100%;
+  height: 100vh;
+  padding: 30px 20px;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #f9fbff 0%, #eef4ff 100%); /* 更浅的蓝白渐变 */
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow-y: auto; /* 允许内容过长时滚动 */
+}
+
+/* 头部样式 */
+.header {
+  -webkit-app-region: drag;
+  text-align: center;
+  margin-bottom: 30px;
+  padding-top: 10px;
+}
+
+/* 头像容器 - 确保整体居中且尺寸固定 */
+.avatar-container {
+  -webkit-app-region: no-drag;
+  position: relative; /* 为可能的提示文字做准备 */
+  width: 80px; /* 固定容器宽度 */
+  height: 80px; /* 固定容器高度 */
+  margin: 0 auto 15px; /* 水平居中，底部留间距 */
+  filter: drop-shadow(0 2px 8px rgba(105, 177, 255, 0.15)); /* 浅蓝色调阴影 */
+  cursor: pointer; /* 提示可点击 */
+}
+
+/* 头像基础样式 - 图片和默认容器通用 */
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%; /* 确保圆形显示 */
+  border: 1px solid #e6f0ff; /* 浅蓝色边框 */
+  display: flex; /* 启用flex布局 */
+  align-items: center; /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+  background-color: #f0f7ff; /* 浅蓝色背景，无图时更美观 */
+  overflow: hidden; /* 确保内容不超出圆形 */
+  transition: all 0.3s ease;
+}
+
+/* 图片头像特殊处理 */
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 保持比例填充圆形，避免拉伸 */
+}
+
+/* 上传图标样式 */
+.avatarIcon {
+  font-size: 48px;
+  color: #94bfff; /* 浅蓝色图标 */
+  transition: all 0.3s ease;
+}
+
+/* 鼠标滑过效果 */
+.avatar-container:hover .avatar {
+  transform: scale(1.05);
+  filter: drop-shadow(0 4px 12px rgba(105, 177, 255, 0.2)); /* 浅蓝色调阴影加深 */
+}
+
+/* 鼠标滑过图标时同步变化 */
+.avatar-container:hover .avatarIcon {
+  color: #69b1ff; /* 图标颜色加深为主题蓝 */
+}
+
+/* 点击效果 */
+.avatar-container:active .avatar {
+  transform: scale(0.95);
+}
+
+
+.title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  color: #2c3e50; /* 稍深文字更清晰 */
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #7b8fa1; /* 柔和的文字颜色 */
+}
+
+/* 表单样式 */
+.registerForm {
+  max-width: 500px;
+  margin: 0 auto;
+  background: #ffffff; /* 纯白表单背景 */
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(105, 177, 255, 0.1); /* 浅蓝色调阴影 */
+}
+
+/* 表单项样式 */
+.formGroup {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.required {
+  color: #ff7a7a; /* 柔和的红色必填标记 */
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #e0e7ff; /* 浅蓝色边框 */
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  background-color: #fcfdff; /* 极浅背景色 */
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: #69b1ff; /* 亮蓝色边框 */
+  box-shadow: 0 0 0 3px rgba(105, 177, 255, 0.2); /* 浅蓝色焦点阴影 */
+  background-color: #ffffff;
+}
+
+.textarea {
+  resize: none;
+}
+
+/* 错误状态样式 */
+.inputError {
+  border-color: #ff7a7a; /* 柔和的红色错误边框 */
+}
+
+.errorText {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #ff7a7a; /* 柔和的红色错误提示 */
+  line-height: 1.4;
+}
+
+/* 两列布局 */
+.twoColumn {
+  display: flex;
+  gap: 15px;
+}
+
+.twoColumn .formGroup {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* 联系信息组样式 */
+.contactGroup {
+  margin-bottom: 20px;
+}
+
+.labelWithHint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.hintText {
+  font-size: 12px;
+  color: #7b8fa1; /* 柔和的提示文字 */
+}
+
+/* 计数器样式 */
+.counter {
+  display: block;
+  text-align: right;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #b0c4de; /* 浅蓝色计数器文字 */
+}
+
+/* 提交按钮样式 */
+.submitButton {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, #69b1ff 0%, #40a9ff 100%); /* 浅蓝色渐变 */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(105, 177, 255, 0.3); /* 浅蓝色阴影 */
+}
+
+.submitButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%); /* 稍深的蓝色渐变 */
+  box-shadow: 0 6px 16px rgba(105, 177, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(105, 177, 255, 0.3);
+}
+
+.submitButton:disabled {
+  background: #c9e0ff; /* 浅灰色禁用状态 */
+  color: #ffffff;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 底部链接样式 */
+.footer {
+  max-width: 500px;
+  margin: 20px auto 0;
+  text-align: center;
+  font-size: 14px;
+  color: #7b8fa1; /* 柔和的文字颜色 */
+}
+
+.loginLink {
+  color: #69b1ff; /* 浅蓝色链接 */
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 5px;
+  transition: color 0.2s ease;
+}
+
+.loginLink:hover {
+  color: #40a9ff; /* 稍深的蓝色 */
+  text-decoration: underline;
+}
+
+/* 响应式调整 */
+@media (max-width: 500px) {
+  .registerForm {
+    padding: 20px;
+  }
+  
+  .twoColumn {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .title {
+    font-size: 22px;
+  }
+  
+  .registerContainer {
+    padding: 20px 15px;
+  }
+}

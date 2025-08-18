@@ -1,0 +1,282 @@
+/* FriendListLayout.module.css */
+
+/* 根容器：充满视口，作为分割面板的容器 */
+.friendListLayout {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #121212;
+  overflow: hidden;
+}
+
+/* 左侧面板容器：垂直布局 */
+.leftPanel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #1f1f1f;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 好友列表标题区域 - 优化版 */
+.friendsListTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #7a7a7a;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.friendsListTitle-text {
+  font-weight: 500;
+}
+
+.friendsListTitle-count {
+  background-color: #666;
+  color: #B0E0E6;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* 好友列表容器 */
+.friendsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+/* 滚动条样式 */
+.friendsList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.friendsList::-webkit-scrollbar-track {
+  background-color: #1a1a1a;
+}
+
+.friendsList::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 2px;
+}
+
+.friendsList::-webkit-scrollbar-thumb:hover {
+  background-color: #444;
+}
+
+/* 好友列表项 */
+.friend-li {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #252525;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.friend-li:hover {
+  background-color: #252525;
+}
+
+.friend-li-activated {
+  background-color: #2a2a2a;
+  position: relative;
+}
+
+.friend-li-activated::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background-color: #4682B4;
+}
+
+/* 头像样式 */
+.friend-li-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-right: 14px;
+  border: 2px solid #2d2d2d;
+  transition: all 0.2s ease;
+  color: #B0E0E6;
+}
+
+.friend-li:hover .friend-li-avatar {
+  border-color: #3a3a3a;
+}
+
+.friend-li-activated .friend-li-avatar {
+  border-color: #4682B4;
+}
+
+/* 名称样式 */
+.friend-li-name {
+  font-size: 15px;
+  color: #d0d0d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+/* 右侧面板 */
+.rightPanel {
+  width: 100%;
+  height: 100%;
+  background-color: #252525;
+  overflow: hidden;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .friend-li {
+    padding: 10px 12px;
+  }
+  
+  .friend-li-avatar {
+    width: 38px;
+    height: 38px;
+    margin-right: 12px;
+  }
+  
+  .friend-li-name {
+    font-size: 14px;
+  }
+  
+  .friendsListTitle {
+    padding: 10px 12px;
+  }
+}
+
+/*搜索栏结果样式*/
+
+/* 空输入时的容器样式 */
+.empty-result {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 无搜索结果提示样式 */
+.no-result {
+  margin: 0;
+  padding: 12px 16px;
+  list-style: none;
+  color: #888; /* 与搜索栏占位符颜色统一 */
+  font-size: 12px;
+  text-align: center;
+  background-color: #2a2a2a; /* 与搜索结果容器背景一致 */
+}
+
+/* 搜索结果列表容器 */
+.search-result-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: #2a2a2a; /* 匹配搜索结果容器背景 */
+  border-radius: 4px;
+  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* 单个搜索项样式 */
+.searchItem {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid #3a3a3a; /* 分隔线与边框颜色一致 */
+}
+
+/* 最后一项移除下边框 */
+.searchItem:last-child {
+  border-bottom: none;
+}
+
+/* 悬停效果（匹配result-item的hover样式） */
+.searchItem:hover {
+  background-color: #3a3a3a;
+}
+
+/* 点击效果 */
+.searchItem:active {
+  background-color: #444;
+}
+
+/* 头像样式 */
+.searchItemAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px; /* 轻微圆角，适配深色风格 */
+  object-fit: cover;
+  margin-right: 12px;
+  border: 1px solid #3a3a3a; /* 边框与背景协调 */
+}
+
+/* 用户名/备注样式 */
+.searchItemUserName {
+  font-size: 14px; /* 与搜索框字体大小统一 */
+  color: #ddd; /* 浅色文字，确保深色背景下可读性 */
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* 高亮匹配文本（可选增强） */
+.highlight {
+  color: #4682B4; /* 与搜索栏聚焦边框颜色一致 */
+  font-weight: 500;
+}
+
+/* 自定义滚动条（与搜索结果容器滚动条样式统一） */
+.search-result-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.search-result-list::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 3px;
+}
+
+.search-result-list::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.search-result-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* 结果项辅助信息（如手机号/邮箱，可选） */
+.searchItem-aux {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

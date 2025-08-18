@@ -1,0 +1,352 @@
+/* FriendRequestBox.module.css */
+
+/* 基础重置 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 主容器 - 全屏布局 */
+.FriendRequestBoxLayout {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #121212;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  color: #e0e0e0;
+}
+
+/* 头部 - 固定高度 55px */
+.FriendRequestBoxListHeader {
+  height: 55px;
+  padding: 0 24px;
+  background-color: #1e1e1e;
+  border-bottom: 1px solid #2d2d2d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0; /* 固定高度不压缩 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.FriendRequestBoxListHeader span {
+  font-size: 16px;
+  font-weight: 500;
+  color: #f0f0f0;
+}
+
+/* 列表容器 - 滚动区域 */
+.FriendRequestBoxList {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a #1e1e1e;
+  padding: 8px 0;
+}
+
+/* 列表项容器 */
+.FriendRequestBoxList ul {
+  list-style: none;
+  width: 100%;
+}
+
+/* 单个申请项 - 卡片式设计 */
+.BoxList-li {
+  width: 100%;
+  padding: 16px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1px solid #2d2d2d;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  min-height: 120px;
+}
+
+.BoxList-li:hover {
+  background-color: #1e1e1e;
+}
+
+/* 头像样式 */
+.BoxList-li-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #2d2d2d;
+  border: 2px solid #3a3a3a;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.BoxList-li:hover .BoxList-li-avatar {
+  transform: scale(1.03);
+}
+
+/* 内容区域 */
+.BoxList-li-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+/* 用户名 */
+.BoxList-li-name {
+  font-size: 17px;
+  font-weight: 500;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 申请留言区域 */
+.BoxList-li-statement {
+  font-size: 14px;
+  color: #b0b0b0;
+  background-color: #242424;
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  height:   90px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a #242424;
+  border: 1px solid #303030;
+}
+
+/* 右侧操作区 */
+.BoxList-li-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 4px 0;
+}
+
+/* 时间文本 */
+.BoxList-li-time {
+  font-size: 12px;
+  color: #8a8a8a;
+  white-space: nowrap;
+}
+
+/* 状态文本 */
+.BoxList-li-status {
+  font-size: 13px;
+  color: #8a8a8a;
+  background-color: #242424;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid #303030;
+}
+
+/* 按钮组 */
+.BoxList-li-button {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* 按钮样式 */
+.BoxList-li-passedBtn,
+.BoxList-li-refuseBtn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  white-space: nowrap;
+}
+
+/* 通过按钮 */
+.BoxList-li-passedBtn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.BoxList-li-passedBtn:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.BoxList-li-passedBtn:active {
+  transform: translateY(0);
+}
+
+/* 拒绝按钮 */
+.BoxList-li-refuseBtn {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border: 1px solid #3a3a3a;
+}
+
+.BoxList-li-refuseBtn:hover {
+  background-color: #363636;
+  transform: translateY(-1px);
+}
+
+.BoxList-li-refuseBtn:active {
+  transform: translateY(0);
+}
+
+/* 空状态 */
+.no-requests {
+  height: calc(100vh - 55px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8a8a8a;
+  font-size: 15px;
+  padding: 24px;
+  text-align: center;
+  background-color: #121212;
+}
+
+.no-requests::before {
+  content: '';
+  width: 64px;
+  height: 64px;
+  background-color: #1e1e1e;
+  border-radius: 50%;
+  margin-bottom: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='9' cy='7' r='4'%3E%3C/circle%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87'%3E%3C/path%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* 加载状态 */
+.loading {
+  height: calc(100vh - 55px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #121212;
+  color: #8a8a8a;
+  font-size: 15px;
+}
+
+.loading-skeleton {
+  width: 100%;
+  height: 60px;
+  background-color: #242424;
+  border-radius: 8px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* 错误状态 */
+.error {
+  height: calc(100vh - 55px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #121212;
+  color: #e57373;
+  font-size: 15px;
+  padding: 24px;
+  text-align: center;
+}
+
+/* 滚动条样式优化 */
+.FriendRequestBoxList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.FriendRequestBoxList::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.FriendRequestBoxList::-webkit-scrollbar-thumb {
+  background-color: #3a3a3a;
+  border-radius: 3px;
+}
+
+.FriendRequestBoxList::-webkit-scrollbar-thumb:hover {
+  background-color: #4a4a4a;
+}
+
+/* 申请留言滚动条 */
+.BoxList-li-statement::-webkit-scrollbar {
+  width: 4px;
+}
+
+.BoxList-li-statement::-webkit-scrollbar-thumb {
+  background-color: #3a3a3a;
+  border-radius: 2px;
+}
+
+/* 动画效果 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .FriendRequestBoxListHeader {
+    padding: 0 16px;
+  }
+
+  .BoxList-li {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .BoxList-li-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .BoxList-li-content {
+    gap: 6px;
+  }
+
+  .BoxList-li-statement {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .BoxList-li-button {
+    gap: 8px;
+  }
+
+  .BoxList-li-passedBtn,
+  .BoxList-li-refuseBtn {
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .BoxList-li {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .BoxList-li-right {
+    width: 100%;
+    align-items: flex-end;
+    margin-top: 8px;
+  }
+
+  .BoxList-li-button {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

@@ -1,0 +1,185 @@
+/* 主容器 */
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+/* 头部导航 */
+.header {
+  height: 50px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #333;
+  background-color: #1e1e1e;
+  flex-shrink: 0; /* 防止头部被压缩 */
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  padding: 5px;
+  margin-right: 15px;
+  transition: color 0.2s ease;
+}
+
+.backButton:hover {
+  color: #fff;
+}
+
+.backIcon {
+  font-size: 12px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* 主体内容 */
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  align-items: center;
+}
+
+/* 用户卡片 */
+.userCard {
+  display: flex;
+  align-items: center;
+  width: 80%;
+  padding: 10px;
+  margin-bottom: 20px;
+  background-color: #252525;
+  border-radius: 8px;
+}
+
+/* 用户头像 */
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0px 20px;
+  object-fit: cover; /* 填充整个容器，可能裁剪 */
+}
+
+/* 用户信息 */
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.user-name {
+  font-weight: 500;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-details {
+  font-size: 14px;
+  color: #aaa;
+}
+
+.user-contact {
+  display: flex;
+  gap: 20px;
+}
+
+/* 表单组 */
+.formGroup {
+  width: 80%;
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.textarea {
+  width: 100%;
+  padding: 12px;
+  background-color: #282828;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.textarea:focus {
+  border-color: #4682B4;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  background-color: #282828;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus {
+  border-color: #4682B4;
+}
+
+/* 计数器 */
+.counter {
+  text-align: right;
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
+}
+
+/* 发送按钮 */
+.sendButton {
+  width: 70%;
+  padding: 12px;
+  background-color: #4682B4;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sendButton:hover {
+  background-color: #3a6d99;
+}
+
+.sendButton:disabled {
+  background-color: #3a3a3a;
+  color: #666;
+  cursor: not-allowed;
+}

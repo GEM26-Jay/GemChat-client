@@ -1,0 +1,56 @@
+/* 容器样式：充满父容器，垂直布局 */
+.vertical-split-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column; /* 垂直排列面板 */
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* 上方面板：相对定位，承载分割条 */
+.top-panel {
+  width: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  flex-shrink: 0; /* 禁止收缩 */
+  position: relative; /* 关键：使分割条可绝对定位 */
+}
+
+/* 下方面板：自适应剩余高度 */
+.bottom-panel {
+  width: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  flex: 1; /* 填充剩余空间 */
+}
+
+/* 分割条样式：绝对定位在上方面板底部 */
+.split-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0; /* 贴紧上方面板底部边缘 */
+  width: 100%;
+  background-color: transparent; /* 默认透明 */
+  cursor: row-resize; /* 垂直拖拽光标 */
+  transition: background-color 0.2s ease;
+  z-index: 10; /* 确保在内容上方 */
+  transform: translateY(50%); /* 居中在上下面板边界 */
+}
+
+/* 分割条悬停效果 */
+.split-bar:hover {
+  background-color: #aaa;
+}
+
+/* 分割条激活（拖拽中）效果 */
+.split-bar:active {
+  background-color: #888;
+}
+
+/* 拖拽时全局样式优化 */
+.dragging {
+  cursor: row-resize !important;
+  user-select: none; /* 防止拖拽时选中文本 */
+}

@@ -1,0 +1,72 @@
+/* ChatBoxLayout.module.css */
+.chat-box-container {
+  width: 100%;
+  height: 100vh; /* 占满整个视口高度 */
+  display: flex;
+  flex-direction: column; /* 垂直排列标题栏和主面板 */
+  overflow: hidden;
+  background-color: #121212; /* 全局背景色 */
+}
+
+/* 顶部标题栏 */
+.chat-header {
+  height: 46px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background-color: #1f1f1f;
+  border-bottom: 1px solid #252525; /* 更协调的分隔线颜色 */
+  flex-shrink: 0; /* 固定高度，不被压缩 */
+  z-index: 10; /* 确保在内容上方 */
+}
+
+.chat-header-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #eee;
+  white-space: nowrap; /* 防止名称过长换行 */
+  overflow: hidden;
+  text-overflow: ellipsis; /* 超出显示省略号 */
+  max-width: 60%; /* 限制最大宽度，避免挤压设置按钮 */
+}
+
+.chat-setting-icon {
+  color: #ccc;
+  font-size: 20px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.chat-setting-icon:hover {
+  color: #fff; /* 悬停时提亮 */
+}
+
+/* 主聊天区域容器（承载垂直分割面板） */
+.main-chat-panel {
+  flex: 1; /* 填充剩余全部高度 */
+  width: 100%;
+  overflow: hidden; /* 防止内部内容溢出影响整体布局 */
+}
+
+/* 上方面板（消息列表区域） */
+.topPanel {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 由内部消息列表自身管理滚动 */
+}
+
+/* 下方面板（发送框区域） */
+.bottomPanel {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 确保发送框不溢出 */
+  background-color: #1f1f1f; /* 与标题栏背景一致 */
+  border-top: 1px solid #252525; /* 顶部分隔线 */
+}
+
+/* 修复垂直分割面板样式兼容 */
+.main-chat-panel .vertical-split-container {
+  height: 100% !important; /* 强制分割面板占满主区域高度 */
+}

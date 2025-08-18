@@ -1,0 +1,233 @@
+/* FriendRequestBox.module.css */
+
+/* 容器样式 - 保持全屏布局 */
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #121212;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  color: #e0e0e0;
+}
+
+/* 头部样式 - 固定55px高度 */
+.header {
+  height: 55px;
+  padding: 0 24px;
+  background-color: #1e1e1e;
+  border-bottom: 1px solid #2d2d2d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #f0f0f0;
+}
+
+.count {
+  font-size: 14px;
+  color: #999;
+  background-color: #333;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+/* 列表容器 - 滚动区域 */
+.list {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a #1e1e1e;
+  padding: 8px 0;
+}
+
+/* 列表项样式 */
+.listItem {
+  width: 100%;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #2d2d2d;
+  transition: background-color 0.2s ease;
+  min-height: 80px;
+}
+
+.listItem:hover {
+  background-color: #1e1e1e;
+}
+
+/* 头像样式 */
+.avatarContainer {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #2d2d2d;
+  border: 2px solid #3a3a3a;
+  transition: transform 0.2s ease;
+}
+
+.listItem:hover .avatar {
+  transform: scale(1.03);
+}
+
+/* 内容区域 */
+.content {
+  flex: 1;
+  min-width: 0;
+  margin-right: 16px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remark {
+  font-size: 14px;
+  color: #999;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.signature {
+  font-size: 14px;
+  color: #b0b0b0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 取消拉黑按钮 */
+.unblockButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  white-space: nowrap;
+  background-color: #333;
+  color: #e0e0e0;
+  border: 1px solid #444;
+}
+
+.unblockButton:hover {
+  background-color: #4682B4;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.unblockButton:active {
+  transform: translateY(0);
+}
+
+/* 空状态样式 */
+.emptyState {
+  height: calc(100vh - 55px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8a8a8a;
+  font-size: 15px;
+  padding: 24px;
+  text-align: center;
+}
+
+.emptyState::before {
+  content: '';
+  width: 64px;
+  height: 64px;
+  background-color: #1e1e1e;
+  border-radius: 50%;
+  margin-bottom: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='9' cy='7' r='4'%3E%3C/circle%3E%3Cpath d='M23 21v-2a4 4 0 0 0-3-3.87'%3E%3C/path%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* 滚动条样式 */
+.list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background-color: #3a3a3a;
+  border-radius: 3px;
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background-color: #4a4a4a;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+  
+  .listItem {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  
+  .avatar {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .unblockButton {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .listItem {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .content {
+    margin-right: 0;
+    width: 100%;
+  }
+  
+  .unblockButton {
+    align-self: flex-end;
+  }
+}

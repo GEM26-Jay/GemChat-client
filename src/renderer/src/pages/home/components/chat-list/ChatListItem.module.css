@@ -1,0 +1,111 @@
+.chat-list-item-wrapper {
+  width: 100%;
+  display: flex;
+  height: 60px;
+  align-items: center;
+  padding: 6px 10px 6px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 200px; /* 父容器最小宽度（根据需求调整） */
+}
+
+/* 1. 头像容器：固定宽度，不缩放 */
+.chat-avatar {
+  position: relative;
+  width: 40px; /* 固定宽度 */
+  height: 40px;
+  margin-right: 10px;
+  flex-shrink: 0; /* 禁止缩放 */
+}
+
+.chat-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #ff4d4f;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 15px;
+}
+
+/* 2. 中间内容容器：占据剩余空间，自适应缩放 */
+.chat-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1; /* 占据剩余所有空间 */
+  min-width: 0; /* 关键：允许内容容器在父容器缩小时小于自身内容宽度 */
+  gap: 2px
+}
+
+/* 标题和时间所在行 */
+.chat-info {
+  display: flex;
+  align-items: center;
+  /* 两端对齐，标题居左，时间居右 */
+  justify-content: space-between; 
+  width: 100%; 
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+/* 标题容器：自适应剩余空间，溢出省略 */
+.chat-title-container {
+  flex: 1; /* 占据时间之外的剩余空间 */
+  min-width: 0; /* 允许容器宽度小于内容宽度 */
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0; /* 允许容器宽度小于内容宽度 */
+}
+
+.chat-title-text {
+  flex: 1;
+  min-width: 0; /* 确保文本可以被压缩 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+.chat-title-label {
+  flex-shrink: 0;       /* 标签不缩小 */
+  border-radius: 3px;
+  padding: 1px 4px;     /* 修复内边距语法 */
+  margin: 0;            /* 重置边距 */
+  background-color: #999;  /* 使用与边框相同的颜色 */
+  color: white;         /* 文本颜色 */
+  font-size: 12px;      /* 更小的字体 */
+  white-space: nowrap;  /* 确保标签内容不换行 */
+}
+
+/* 3. 时间：固定宽度，不缩放 */
+.chat-time {
+  font-size: 10px;
+  color: #999;
+  width: 60px; /* 固定宽度（足够显示时间） */
+  text-align: right;
+  flex-shrink: 0; /* 禁止缩放 */
+}
+
+/* 最后一条消息：自适应剩余空间，溢出省略 */
+.chat-last-message {
+  font-size: 10px;
+  color: #bbb;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; /* 允许内容被压缩 */
+}

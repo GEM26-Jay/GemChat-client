@@ -1,0 +1,97 @@
+/* Sidebar.css */
+.sidebar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 60px; /* 固定宽度 */
+  display: flex;
+  flex-direction: column;
+  z-index: 100; /* 确保在最上层 */
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.sidebar-menu {
+  flex: 1; /* 占满剩余空间 */
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  border-top: 1px solid #999;
+  border-bottom: 1px solid #999;
+}
+
+.sidebar-footer {
+  padding: 16px 0;
+}
+
+.sidebar-item {
+  width: 100%;
+  height: 60px; /* 固定高度 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+/* .sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+} */
+
+.sidebar-item--active {
+  /* background-color: rgba(255, 255, 255, 0.1); */
+  width: 100%;
+  height: 60px; /* 固定高度 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #2f88ff;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.sidebar-item__icon {
+  position: relative;
+  font-size: 20px;
+}
+
+.sidebar-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #ff4d4f;
+  color: white;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+.sidebar-item__label {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.sidebar-avatar {
+  height: 48px;
+  width: 48px;
+  overflow: hidden;
+  margin: 40px 6px 10px 6px;
+  border: 1px solid #4682B4;
+  border-radius: 6px;
+}
+
+.sidebar-avatar img {
+  width: 100%;      /* 宽度占满父容器 */
+  height: 100%;     /* 高度占满父容器 */
+  object-fit: cover; /* 关键：保持图片比例，填充容器并裁剪溢出部分 */
+  object-position: center; /* 图片居中显示 */
+}

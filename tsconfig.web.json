@@ -1,0 +1,21 @@
+// tsconfig.web.json
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "include": [
+    "src/renderer/src/env.d.ts",
+    "src/renderer/src/**/*",    // 渲染进程业务代码
+    "src/preload/*.d.ts",       // 预加载类型定义（给渲染进程用）
+    "src/shared/**/*"           // 共享模块（给渲染进程用）
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "jsx": "react-jsx",         // 如果用 React，保持这个配置
+    "baseUrl": ".",             // 基础路径为项目根目录
+    "paths": {
+      // 渲染进程业务代码别名，从 src/renderer/src 下快速导入
+      "@renderer/*": ["src/renderer/src/*"],  
+      // 共享模块别名，渲染进程专用
+      "@shared/*": ["src/shared/*"],  
+    }
+  }
+}

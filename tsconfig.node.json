@@ -1,0 +1,23 @@
+// tsconfig.node.json
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": [
+    "electron.vite.config.*", 
+    "src/main/**/*",        // 主进程代码
+    "src/preload/**/*",     // 预加载脚本
+    "src/shared/**/*"       // 共享模块（给主进程/预加载用）
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "types": ["electron-vite/node"],
+    "baseUrl": ".",         // 基础路径为项目根目录
+    "paths": {
+      // 主进程相关别名，方便从 src/main 下快速导入
+      "@main/*": ["src/main/*"],  
+      // 预加载相关别名
+      "@preload/*": ["src/preload/*"], 
+      // 共享模块别名，主进程/预加载都能直接用
+      "@shared/*": ["src/shared/*"]  
+    }
+  }
+}

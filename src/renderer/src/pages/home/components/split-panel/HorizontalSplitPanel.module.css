@@ -1,0 +1,56 @@
+/* 容器样式：充满父容器，使用Flex布局 */
+.resizable-split-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative; /* 为可能的全局定位提供参考 */
+}
+
+/* 左侧面板：相对定位，用于承载分割条 */
+.left-panel {
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  flex-shrink: 0; /* 禁止收缩 */
+  position: relative; /* 关键：使分割条可绝对定位在其内部 */
+}
+
+/* 右侧面板：自适应剩余宽度 */
+.right-panel {
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  flex: 1; /* 填充剩余空间 */
+}
+
+/* 分割条样式：绝对定位在左侧面板右侧 */
+.split-bar {
+  position: absolute;
+  top: 0;
+  right: 2px; /* 贴紧左侧面板右侧边缘 */
+  height: 100%;
+  background-color: transparent; /* 默认透明 */
+  cursor: col-resize;
+  transition: background-color 0.2s ease;
+  z-index: 10; /* 确保在内容上方 */
+  transform: translateX(50%); /* 居中在左侧面板边缘 */
+}
+
+/* 分割条悬停效果：显示颜色 */
+.split-bar:hover {
+  background-color: #aaa;
+}
+
+/* 分割条激活（拖拽中）效果 */
+.split-bar:active,
+.split-bar.dragging {
+  background-color: #888;
+}
+
+/* 拖拽时全局光标优化 */
+.dragging {
+  cursor: col-resize !important;
+  user-select: none; /* 防止拖拽时选中文本 */
+}
