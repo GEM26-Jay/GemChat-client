@@ -57,7 +57,7 @@ class FriendRequestDB {
 
     const db = await this.ensureDb()
     const rows = await db.all<FriendRequestRow[]>(
-      'SELECT * FROM friend_request WHERE from_id = ? ORDER BY created_at DESC',
+      'SELECT * FROM friend_request WHERE from_id = ? ORDER BY updated_at DESC',
       [fromId]
     )
     return rows.map((row) => this.convertRowToRequest(row) as FriendRequest)
@@ -73,7 +73,7 @@ class FriendRequestDB {
 
     const db = await this.ensureDb()
     const rows = await db.all<FriendRequestRow[]>(
-      'SELECT * FROM friend_request WHERE to_id = ? ORDER BY created_at DESC',
+      'SELECT * FROM friend_request WHERE to_id = ? ORDER BY updated_at DESC',
       [toId]
     )
     return rows.map((row) => this.convertRowToRequest(row) as FriendRequest)
@@ -92,7 +92,7 @@ class FriendRequestDB {
     const rows = await db.all<FriendRequestRow[]>(
       `SELECT * FROM friend_request 
      WHERE from_id = ? OR to_id = ? 
-     ORDER BY created_at DESC`,
+     ORDER BY updated_at DESC`,
       [id, id] // 两个参数都传入用户ID，分别匹配from_id和to_id
     )
 
@@ -111,7 +111,7 @@ class FriendRequestDB {
 
     const db = await this.ensureDb()
     const rows = await db.all<FriendRequestRow[]>(
-      'SELECT * FROM friend_request WHERE to_id = ? AND status = ? ORDER BY created_at DESC',
+      'SELECT * FROM friend_request WHERE to_id = ? AND status = ? ORDER BY updated DESC',
       [toId, status]
     )
     return rows.map((row) => this.convertRowToRequest(row) as FriendRequest)
@@ -175,11 +175,11 @@ class FriendRequestDB {
           request.id,
           request.fromId,
           request.toId,
-          request.fromRemark || '',
-          request.toRemark || '',
-          request.statement || '',
+          request.fromRemark,
+          request.toRemark,
+          request.statement,
           request.status,
-          request.updatedAt || Date.now()
+          request.updatedAt
         ]
       )
       if (result.changes) {

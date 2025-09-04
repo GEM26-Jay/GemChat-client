@@ -1,6 +1,6 @@
 import styles from './MainBoard.module.css'
 
-import { Outlet } from 'react-router'
+import { Outlet, useNavigate } from 'react-router'
 import Sidebar from './components/sidebar/Sidebar'
 import React, { useEffect } from 'react'
 import 'modern-normalize/modern-normalize.css'
@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 function MainBoard(): React.JSX.Element {
   const queryClient = useQueryClient()
+  const nav = useNavigate()
 
   useEffect(() => {
     // 监听主进程的 update 消息
@@ -17,7 +18,10 @@ function MainBoard(): React.JSX.Element {
         exact: false // 失效所有相关查询
       })
     })
-  }, [queryClient])
+    window.windowsApi.onNavigateMainWindow((navPath) => {
+      nav(navPath)
+    })
+  }, [queryClient, nav])
 
   return (
     <div className={styles['appContainer']}>

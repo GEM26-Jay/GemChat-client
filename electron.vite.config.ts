@@ -20,7 +20,8 @@ export default defineConfig({
           home: resolve(__dirname, 'src/renderer/home.html'),
           login: resolve(__dirname, 'src/renderer/login.html'),
           register: resolve(__dirname, 'src/renderer/register.html'),
-          addFriend: resolve(__dirname, 'src/renderer/addFriend.html')
+          addFriend: resolve(__dirname, 'src/renderer/addFriend.html'),
+          addSession: resolve(__dirname, 'src/renderer/addSession.html')
         },
         output: {
           // 确保资源输出到正确位置
@@ -31,7 +32,8 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
-        '@shared': resolve('src/shared')
+        '@shared': resolve('src/shared'),
+        '@main': resolve('src/main')
       }
     },
     server: {
@@ -43,7 +45,7 @@ export default defineConfig({
       proxy: {
         // 将 /api 开头的请求转发到后端 8100 端口
         '/userApi': {
-          target: 'http://localhost:8100',
+          target: 'http://localhost:8088',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/userApi/, '')
         }

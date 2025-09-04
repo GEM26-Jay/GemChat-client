@@ -77,10 +77,10 @@ class UserDB {
    */
   async getById(id: string): Promise<User | null> {
     const db = await this.ensureDb()
-    const result: DbUserRow | undefined = await db.get('SELECT * FROM user_profile WHERE id = ?', [
+    const result: DbUserRow[] = await db.all<DbUserRow[]>('SELECT * FROM user_profile WHERE id = ?', 
       id
-    ])
-    return result ? DbUserRow2User(result) : null
+    )
+    return result.length > 0 ? DbUserRow2User(result[0]) : null
   }
 
   /**
@@ -141,7 +141,11 @@ class UserDB {
   }
 }
 
+
 /**
  * 导出单例实例
  */
 export const userDB: UserDB = new UserDB()
+
+// userDB.getAll()
+// userDB.getById('344038612569948160')

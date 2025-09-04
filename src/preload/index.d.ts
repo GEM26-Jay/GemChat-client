@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { ApiResult, FriendRequest } from '@shared/types'
+import { ApiResult, ChatSession, FriendRequest } from '@shared/types'
 
 declare global {
   interface Window {
@@ -23,10 +23,35 @@ declare global {
         getRequests: () => Promise<ApiResult<FriendRequest[]>>
         requestAddFriend: (friendRequest: FriendRequest) => Promise<ApiResult<void>>
         updateRequest: (friendRequest: FriendRequest) => Promise<void>
-        getByid: (id: string) => Promise<UserFriend>
         updateFriendRemark: (userFriend: UserFriend) => Promise<ApiResult<void>>
         updateFriendBlock: (userFriend: UserFriend) => Promise<ApiResult<void>>
         updateFriendDelete: (userFriend: UserFriend) => Promise<ApiResult<void>>
+        getByTargetId: (targetId: string) => Promise<ApiResult<UserFriend>>
+      }
+      chat: {
+        getChatSessions: () => Promise<ApiResult<ChatSession[]>>
+        getGroupById: (groupId: string) => Promise<ApiResult<Group>>
+        getSessionById: (sessionId: string) => Promise<ApiResult<ChatSession>>
+        getMessagesBySessionId: (
+          sessionId: string,
+          page: number,
+          pageSize: number
+        ) => Promise<ApiResult<ChatMessage[]>>
+        getMessagesBySessionIdUsingCursor: (
+          sessionId: string,
+          ltMessageId: number,
+          size: number
+        ) => Promise<ApiResult<ChatMessage[]>>
+        getGroupMemberByGroupIdAndUserId: (
+          groupId: string,
+          userId: string
+        ) => Promise<ApiResult<GroupMember>>
+        getSingleSessionByUserIds: (
+          firstId: string,
+          secondId: string
+        ) => Promise<ApiResult<ChatSession>>
+        getGroupSessionByGroupId: (groupId: string) => Promise<ApiResult<ChatSession>>
+        createGroup: (dto: CreateGroupDTO) => Promise<ApiResult<Group>>
       }
     }
     utilApi: {
@@ -38,6 +63,10 @@ declare global {
       closeLoginWindow: () => Promise<void>
       closeRegisterWindow: () => Promise<void>
       openAddFriendWindow: () => Promise<void>
+      openAddSessionWindow: () => Promise<void>
+      closeAddSessionWindow: () => Promise<void>
+      navigateMainWindow: (navPath) => Promise<void>
+      onNavigateMainWindow: (callback) => void
     }
     clientData: {
       get: (key: string) => unknown

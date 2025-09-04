@@ -14,6 +14,26 @@ interface UserFriendRow {
   updated_at: number
 }
 
+/**
+ * 数据库行记录转业务类型（下划线转驼峰）
+ * 精准映射表字段与类型定义
+ */
+const convertRowToUserFriend = (row: UserFriendRow): UserFriend | null => {
+  if (!row) {
+    return null
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    friendId: row.friend_id,
+    blockStatus: row.block_status,
+    deleteStatus: row.delete_status,
+    remark: row.remark,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  } as UserFriend
+}
+
 class UserFriendDB {
   private dbPromise: Promise<Database>
 
@@ -31,23 +51,6 @@ class UserFriendDB {
       console.error('数据库连接异常:', error)
       throw error
     }
-  }
-
-  /**
-   * 数据库行记录转业务类型（下划线转驼峰）
-   * 精准映射表字段与类型定义
-   */
-  private convertRowToUserFriend(row: UserFriendRow): UserFriend {
-    return {
-      id: row.id,
-      userId: row.user_id,
-      friendId: row.friend_id,
-      blockStatus: row.block_status,
-      deleteStatus: row.delete_status,
-      remark: row.remark,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    } as UserFriend
   }
 
   /**
@@ -74,7 +77,7 @@ class UserFriendDB {
   async getFriendRelationById(id: string): Promise<UserFriend | null> {
     const db = await this.ensureDb()
     const row = await db.get<UserFriendRow | null>('SELECT * FROM user_friend WHERE id = ?', [id])
-    return row ? this.convertRowToUserFriend(row) : null
+    return row ? convertRowToUserFriend(row) : null
   }
 
   /**
@@ -87,7 +90,32 @@ class UserFriendDB {
     const rows = await db.all<UserFriendRow[]>('SELECT * FROM user_friend WHERE user_id = ?', [
       userId
     ])
-    return rows.map((row) => this.convertRowToUserFriend(row))
+    if (rows.length > 0) {
+      return rows.map((row) => convertRowToUserFriend(row)) as UserFriend[]
+    } else {
+      return []
+    }
+  }
+
+  /**
+   * 查询用户的所有好友关系
+   * @param userId 用户ID
+   * @returns 好友关系列表
+   */
+  async getFriendRelationsByUserIdAndTargetId(
+    userId: string,
+    targetId: string
+  ): Promise<UserFriend | null> {
+    const db = await this.ensureDb()
+    const row = await db.get<UserFriendRow>(
+      'SELECT * FROM user_friend WHERE user_id = ? and friend_id = ?',
+      [userId, targetId]
+    )
+    if (!row) {
+      return null
+    } else {
+      return convertRowToUserFriend(row)
+    }
   }
 
   /**
@@ -196,7 +224,11 @@ class UserFriendDB {
        AND delete_status in (0, 2)`,
       [userId]
     )
-    return rows.map((row) => this.convertRowToUserFriend(row))
+    if (rows.length > 0) {
+      return rows.map((row) => convertRowToUserFriend(row)) as UserFriend[]
+    } else {
+      return []
+    }
   }
 
   /**
@@ -212,7 +244,11 @@ class UserFriendDB {
        AND block_status IN (1, 3)`, // 1:已拉黑，3:相互拉黑
       [userId]
     )
-    return rows.map((row) => this.convertRowToUserFriend(row))
+    if (rows.length > 0) {
+      return rows.map((row) => convertRowToUserFriend(row)) as UserFriend[]
+    } else {
+      return []
+    }
   }
 
   /**
@@ -237,18 +273,6 @@ class UserFriendDB {
       console.error(`获取用户[${id}]的好友关系最后更新时间失败:`, error)
       return null
     }
-  }
-
-  async getByIds(userId: string, friendId: string): Promise<UserFriend> {
-    const db = await this.ensureDb()
-    const row = await db.all<UserFriendRow>(
-      `SELECT * FROM user_friend 
-       WHERE user_id = ? 
-       AND friend_id = ?`, // 1:已拉黑，3:相互拉黑
-      [userId, friendId]
-    )
-    const result = this.convertRowToUserFriend(row[0])
-    return result
   }
 }
 

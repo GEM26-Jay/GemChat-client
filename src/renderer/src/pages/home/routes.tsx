@@ -23,7 +23,7 @@ const router = createBrowserRouter([
         element: <ChatListLayout />,
         children: [
           {
-            path: ':id',
+            path: ':sessionId',
             element: <ChatBoxLayout></ChatBoxLayout>
           }
         ]

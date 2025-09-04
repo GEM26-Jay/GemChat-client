@@ -1,0 +1,392 @@
+.add-session-board {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 1000px;
+  height: 100vh; /* 固定高度，防止整体滚动 */
+  background-color: #121212;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 左侧面板样式 - 固定高度，防止滚动 */
+.left-pannel {
+  flex: 1.5;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  background-color: #121212;
+  height: 100%; /* 继承父容器高度 */
+}
+
+/* 右侧面板样式 - 固定高度，防止滚动 */
+.right-pannel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #121212;
+  height: 100%; /* 继承父容器高度 */
+}
+
+/* 面板头部通用样式 - 固定位置 */
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #121212;
+  flex-shrink: 0; /* 防止被压缩 */
+}
+
+/* 搜索容器样式 */
+.search-container {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 11px 16px 11px 42px;
+  background-color: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  color: #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: #666666;
+}
+
+.search-input:focus {
+  border-color: #444444;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666666;
+  font-size: 16px;
+}
+
+.clear-search-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666666;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.clear-search-icon:hover {
+  color: #e0e0e0;
+}
+
+/* 列表容器 - 唯一可滚动的区域 */
+.list-container {
+  flex: 1;
+  overflow-y: auto; /* 仅此处允许垂直滚动 */
+  padding: 8px 0;
+  background-color: #121212;
+}
+
+/* 滚动条样式 - 暗黑风格定制 */
+.list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list-container::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.list-container::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+
+.list-container::-webkit-scrollbar-thumb:hover {
+  background: #444444;
+}
+
+/* 好友列表样式 */
+.friend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.friend-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.friend-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.friend-item--selected {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-left: 3px solid #9e9e9e;
+}
+
+/* 头像容器样式 */
+.friend-avatar-wrapper {
+  position: relative;
+  margin-right: 14px;
+}
+
+.friend-avatar, .selected-friend-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  background-color: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 选中状态图标 */
+.selected-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  color: #9e9e9e;
+  background-color: #121212;
+  border-radius: 50%;
+  font-size: 18px;
+  border: 2px solid #121212;
+}
+
+/* 好友信息样式 */
+.friend-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-name {
+  font-size: 15px;
+  color: #e0e0e0;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-signature {
+  font-size: 12px;
+  color: #666666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 已选好友列表样式 */
+.selected-friend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 20px;
+}
+
+.selected-friend-item {
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.selected-friend-item:last-child {
+  border-bottom: none;
+}
+
+.selected-friend-name {
+  flex: 1;
+  margin: 0 14px;
+  font-size: 15px;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 移除按钮样式 */
+.remove-selected-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #1e1e1e;
+  color: #666666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.remove-selected-btn:hover {
+  background-color: rgba(230, 230, 230, 0.1);
+  color: #e0e0e0;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 面板标题样式 */
+.panel-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+}
+
+.panel-title::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #9e9e9e;
+  margin-left: 8px;
+}
+
+/* 清空按钮样式 */
+.clear-selected-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #b0b0b0;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.clear-selected-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e0e0e0;
+}
+
+/* 操作按钮区域样式 - 固定在底部 */
+.action-buttons {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 16px;
+  background-color: #121212;
+  flex-shrink: 0; /* 防止被压缩 */
+}
+
+/* 取消按钮样式 */
+.cancel-btn {
+  flex: 1;
+  padding: 11px 0;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #252525;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 确认按钮样式 */
+.confirm-btn {
+  flex: 1;
+  padding: 11px 0;
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border: 1px solid #444444;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn:hover {
+  background-color: #333333;
+  border-color: #555555;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.confirm-btn:disabled {
+  background-color: #1e1e1e;
+  border-color: #2d2d2d;
+  color: #666666;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 加载状态样式 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666666;
+  gap: 16px;
+}
+
+.loading-spinner {
+  font-size: 28px;
+  color: #9e9e9e;
+  animation: spin 1.5s linear infinite, pulse 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666666;
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.show-waiting {
+  position: absolute;
+  width: 300px;
+  height: 200px;
+  top: 50%;
+  align-items: center;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 16px 24px;
+  background: #b8b0b0;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #333;
+  z-index: 999;
+  align-items: center; /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+}

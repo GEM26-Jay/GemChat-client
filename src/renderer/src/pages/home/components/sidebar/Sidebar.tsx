@@ -18,8 +18,8 @@ const baseUrl = '/home/'
 const menuItems: SidebarItem[] = [
   { label: '聊天', path: `${baseUrl}chat`, icon: <FaComment />, badge: 3 },
   { label: '通讯录', path: `${baseUrl}friend`, icon: <FaUserFriends />, badge: 1 },
-  { label: '文件箱', path: `${baseUrl}chat-files`, icon: <FaFolder /> },
-  { label: '朋友圈', path: `${baseUrl}moments`, icon: <FaImages /> }
+  { label: '文件箱', path: `${baseUrl}chat-file`, icon: <FaFolder /> },
+  { label: '朋友圈', path: `${baseUrl}moment`, icon: <FaImages /> }
 ]
 
 const userSettingsItems: SidebarItem[] = [

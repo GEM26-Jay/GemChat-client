@@ -1,78 +1,111 @@
 import React from 'react'
 import { FaEllipsisH } from 'react-icons/fa'
-import MessageBox, { Message } from '../message-box/MessageBox'
+import MessageBox from '../message-box/MessageBox'
 import styles from './ChatBoxLayout.module.css'
 import VerticalSplitPanel from '../split-panel/VerticalSplitPanel'
 import { useParams } from 'react-router'
 import SendBox from '../send-box/SendBox'
-
-export interface ChatInfoModel {
-  chatType: 'single' | 'group'
-  chatId: string
-  chatName: string
-}
-
-// 模拟聊天消息数据，实际项目中可从接口获取
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    userId: 'other1',
-    userName: '真真',
-    avatarUrl: 'electronSvg',
-    msg: '南京挂是最多的',
-    time: '2025年6月21日 15:16',
-    isMine: false
-  },
-  {
-    id: '2',
-    userId: 'mine',
-    userName: '我',
-    avatarUrl: 'electronSvg',
-    msg: '刷到个视频，讲南京服务器挂最多的，青铜白银局都能红',
-    time: '2025年6月21日 16:17',
-    isMine: true
-  },
-  {
-    id: '3',
-    userId: 'other1',
-    userName: '真真',
-    avatarUrl: 'electronSvg',
-    msg: '今天搞不搞',
-    time: '2025年6月21日 16:17',
-    isMine: false
-  },
-  {
-    id: '4',
-    userId: 'mine',
-    userName: '我',
-    avatarUrl: 'electronSvg',
-    msg: '晚上',
-    time: '2025年7月9日 22:28',
-    isMine: true
-  },
-  {
-    id: '5',
-    userId: 'mine',
-    userName: '我',
-    avatarUrl: 'electronSvg',
-    msg: '闪退了',
-    time: '2025年7月9日 22:28',
-    isMine: true
-  }
-]
-
-const chatInfo: ChatInfoModel = {
-  chatType: 'single',
-  chatId: '1',
-  chatName: '第一次聊天'
-}
+import { useQuery } from '@tanstack/react-query'
+import { ApiResult, ChatSession, ChatGroup, User, UserFriend } from '@shared/types'
 
 const ChatBoxLayout: React.FC = () => {
-  const { id } = useParams()
+  const { sessionId } = useParams<string>()
+
+  const { data: user } = useQuery<User | null>({
+    queryKey: ['current_user'],
+    queryFn: () =>
+      (window.clientData.get('user') as Promise<User>)
+        .then((user: User) => (user ? user : null))
+        .catch(() => null),
+    staleTime: 30 * 60 * 1000,
+    enabled: !!sessionId
+  })
+
+  const { data: chatSession } = useQuery<ChatSession | null>({
+    queryKey: ['chat_session', sessionId],
+    queryFn: () =>
+      window.businessApi.chat
+        .getSessionById(sessionId as string)
+        .then((apiResult: ApiResult<ChatSession>) =>
+          apiResult.isSuccess && apiResult.data ? apiResult.data : null
+        )
+        .catch(() => null),
+    staleTime: 30 * 60 * 1000,
+    enabled: !!sessionId
+  })
+
+  let isValid = true
+
+  let isGroup = false
+  let targetUserId = ''
+  if (chatSession && user) {
+    isGroup = chatSession.type === 1 ? false : true
+    targetUserId = !isGroup
+      ? user.id === chatSession.secondId
+        ? (chatSession.firstId as string)
+        : (chatSession.secondId as string)
+      : ''
+  } else {
+    isValid = false
+  }
+
+  const { data: targetUser } = useQuery<User | null>({
+    queryKey: ['user', targetUserId],
+    queryFn: () =>
+      window.businessApi.user
+        .selectById(targetUserId)
+        .then((apiResult: ApiResult<User>) =>
+          apiResult.isSuccess && apiResult.data ? apiResult.data : null
+        )
+        .catch(() => null),
+    staleTime: 30 * 60 * 1000,
+    enabled: !isGroup && isValid
+  })
+
+  const { data: group } = useQuery<ChatGroup | null>({
+    queryKey: ['group', chatSession?.firstId],
+    queryFn: () =>
+      window.businessApi.chat
+        .getGroupById(chatSession?.firstId as string)
+        .then((apiResult: ApiResult<ChatGroup>) =>
+          apiResult.isSuccess && apiResult.data ? apiResult.data : null
+        )
+        .catch(() => null),
+    staleTime: 30 * 60 * 1000,
+    enabled: isGroup && isValid
+  })
+
+  // 获取好友
+  const { data: userFriend } = useQuery<UserFriend | null>({
+    queryKey: ['user_friend', targetUserId],
+    queryFn: () =>
+      window.businessApi.friend
+        .getByTargetId(targetUserId)
+        .then((apiResult: ApiResult<UserFriend>) =>
+          apiResult.isSuccess && apiResult.data ? apiResult.data : null
+        )
+        .catch(() => null),
+    staleTime: 30 * 60 * 1000,
+    enabled: !group && isValid
+  })
+
+  if (!isValid) {
+    return null
+  }
+
+  const title = isGroup
+    ? group?.name
+    : userFriend?.remark
+      ? userFriend?.remark
+      : targetUser?.username
 
   const topPanel = (
     <div className={styles['topPanel']}>
-      <MessageBox messageList={mockMessages}></MessageBox>
+      <MessageBox
+        isGroup={isGroup}
+        userId={user?.id as string}
+        sessionId={chatSession?.id as string}
+      ></MessageBox>
     </div>
   )
 
@@ -86,7 +119,7 @@ const ChatBoxLayout: React.FC = () => {
     <div className={styles['chat-box-container']}>
       {/* 顶部标题栏 */}
       <div className={styles['chat-header']}>
-        <span className={styles['chat-header-name']}>{chatInfo.chatName}</span>
+        <span className={styles['chat-header-name']}>{title}</span>
         <FaEllipsisH className={styles['chat-setting-icon']} />
       </div>
       <div className={styles['main-chat-panel']}>

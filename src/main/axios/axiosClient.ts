@@ -24,7 +24,7 @@ export interface RawResponse<T = void> {
 
 // 创建Axios实例
 export const axiosClient = axios.create({
-  baseURL: 'http://localhost:8100/',
+  baseURL: 'http://localhost:8088/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'

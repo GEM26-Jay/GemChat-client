@@ -101,7 +101,7 @@ export interface UniversalFile {
 }
 
 /** 群聊信息类型（对应group表） */
-export interface Group {
+export interface ChatGroup {
   id: string // 群聊ID
   name: string // 群聊名称
   createUser: number // 创建者用户ID
@@ -113,21 +113,8 @@ export interface Group {
   updatedAt: number // 更新时间戳（毫秒）
 }
 
-/** 聊天消息类型（对应message表） */
-export interface Message {
-  id: string // 消息ID
-  type: number // 消息类型（接收类型+内容类型）
-  fromId: string // 发送者ID
-  toId: string // 接收者ID（用户/群聊）
-  content: string // 消息内容/资源标识
-  status: number // 状态（1-正常，2-撤回，3-删除）
-  createdAt: number // 发送时间戳（毫秒）
-  updatedAt: number // 更新时间戳（毫秒）
-}
-
 /** 群成员关联类型（对应group_member表） */
 export interface GroupMember {
-  id: string // 记录ID
   groupId: string // 群聊ID
   userId: string // 成员用户ID
   remark?: string // 群内备注
@@ -152,16 +139,48 @@ export interface FriendRequest {
 
 /** 好友类型（对应user_friend表） */
 export interface UserFriend {
-  id: string // 申请ID
-  userId: string // 申请人ID
-  friendId: string // 被申请人ID
-  blockStatus: number // 申请人备注
-  deleteStatus: number // 被申请人备注
-  remark: string // 申请留言
+  id: string
+  userId: string
+  friendId: string
+  blockStatus: number
+  deleteStatus: number
+  remark: string
   createdAt: number // 申请时间戳（毫秒）
   updatedAt: number // 更新时间戳（毫秒）
 }
 
 export interface UserFriendProfile extends User {
   remark: string
+}
+
+/**
+ * 聊天会话类型
+ */
+export interface ChatSession {
+  id: string // 会话ID，主键
+  type: number // 聊天类型 1-单聊，2-群聊
+  firstId: string | null // 如果是单聊，则为第二个用户的ID，如果是群聊，则为空
+  secondId: string | null // 如果是单聊，则为第二个用户的ID，如果是群聊，则为空
+  lastMessageId: string | null // 最后一条消息ID
+  lastMessageContent: string | null // 最后一条消息内容摘要
+  lastMessageTime: number | null // 最后一条消息时间戳
+  status: number // 1-正常
+  createdAt: number // 创建时间戳
+  updatedAt: number // 更新时间戳
+}
+
+/**
+ * 聊天消息类型
+ */
+export interface ChatMessage {
+  id: string // 消息ID，主键
+  sessionId: string // 会话ID
+  type: number
+  fromId: string // 发送者ID
+  toId: string // 接收者ID（用户ID或群ID）
+  content: string | null // 消息内容
+  status: number
+  replyToId: string | null // 引用消息ID（回复功能）
+  createdAt: number // 发送时间戳
+  updatedAt: number // 更新时间戳
 }

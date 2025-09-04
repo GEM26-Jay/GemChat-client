@@ -46,15 +46,13 @@ const UserInfoPanel: React.FC = () => {
   const { data: userFriend, isLoading: isFriendLoading } = useQuery<UserFriend>({
     queryKey: ['user_friend', id],
     queryFn: async () => {
-      const result: ApiResult<UserFriend> = await window.businessApi.friend.getByid(id!)
+      const result: ApiResult<UserFriend> = await window.businessApi.friend.getByTargetId(id!)
       if (result.isSuccess && result.data) return result.data
       throw new Error(result.msg || '获取好友关系失败')
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000
   })
-
-  console.log(JSON.stringify(userFriend))
 
   // 备注更新Mutation
   const updateRemarkMutation = useMutation({

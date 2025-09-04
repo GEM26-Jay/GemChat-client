@@ -2,13 +2,18 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import {
   ApiResult,
+  ChatMessage,
+  ChatSession,
   FriendRequest,
+  ChatGroup,
+  GroupMember,
   LoginFormData,
   RegisterData,
   UniversalFile,
   User,
   UserFriend
 } from '../shared/types'
+import { CreateGroupDTO } from '@shared/DTO.types'
 
 // 暴露electronAPI
 contextBridge.exposeInMainWorld('electron', electronAPI)
@@ -87,13 +92,50 @@ contextBridge.exposeInMainWorld('businessApi', {
       ipcRenderer.invoke('friend-addRequest', friendRequest),
     updateRequest: (friendRequest: FriendRequest): Promise<void> =>
       ipcRenderer.invoke('friend-updateRequest', friendRequest),
-    getByid: (id: string): Promise<UserFriend> => ipcRenderer.invoke('friend-getById', id),
     updateFriendRemark: (userFriend: UserFriend): Promise<ApiResult<void>> =>
       ipcRenderer.invoke('friend-updateFriendRemark', userFriend),
     updateFriendBlock: (userFriend: UserFriend): Promise<ApiResult<void>> =>
       ipcRenderer.invoke('friend-updateFriendBlock', userFriend),
     updateFriendDelete: (userFriend: UserFriend): Promise<ApiResult<void>> =>
-      ipcRenderer.invoke('friend-updateFriendDelete', userFriend)
+      ipcRenderer.invoke('friend-updateFriendDelete', userFriend),
+    getByTargetId: (targetId: string): Promise<ApiResult<UserFriend>> =>
+      ipcRenderer.invoke('friend-getByTargetId', targetId)
+  },
+  chat: {
+    getChatSessions: (): Promise<ApiResult<ChatSession[]>> =>
+      ipcRenderer.invoke('chat-getSessions'),
+    getGroupById: (groupId: string): Promise<ApiResult<ChatGroup>> =>
+      ipcRenderer.invoke('chat-getGroupById', groupId),
+    getSessionById: (sessionId: string): Promise<ApiResult<ChatSession>> =>
+      ipcRenderer.invoke('chat-getSessionById', sessionId),
+    getMessagesBySessionId: (
+      sessionId: string,
+      page: number,
+      pageSize: number
+    ): Promise<ApiResult<ChatMessage[]>> =>
+      ipcRenderer.invoke('chat-getMessagesBySessionId', sessionId, page, pageSize),
+    getMessagesBySessionIdUsingCursor: (
+      sessionId: string,
+      ltMessageId: number,
+      size: number
+    ): Promise<ApiResult<ChatMessage[]>> =>
+      ipcRenderer.invoke('chat-getMessagesBySessionIdUsingCursor', sessionId, ltMessageId, size),
+    getGroupMemberByGroupIdAndUserId: (
+      groupId: string,
+      userId: string
+    ): Promise<ApiResult<GroupMember>> =>
+      ipcRenderer.invoke('chat-getGroupMemberByGroupIdAndUserId', groupId, userId),
+    getSingleSessionByUserIds: (
+      firstId: string,
+      secondId: string
+    ): Promise<ApiResult<ChatSession>> =>
+      ipcRenderer.invoke('chat-getSingleSessionByUserIds', firstId, secondId),
+    getGroupSessionByGroupId: (
+      groupId: string
+    ): Promise<ApiResult<ChatSession>> =>
+      ipcRenderer.invoke('chat-getGroupSessionByGroupId', groupId),
+    createGroup: (dto: CreateGroupDTO): Promise<ApiResult<ChatGroup>> =>
+      ipcRenderer.invoke('chat-createGroup', dto)
   }
 })
 
@@ -103,7 +145,13 @@ contextBridge.exposeInMainWorld('windowsApi', {
   openRegisterWindow: () => ipcRenderer.invoke('openRegisterWindow'),
   closeLoginWindow: () => ipcRenderer.invoke('closeLoginWindow'),
   closeRegisterWindow: () => ipcRenderer.invoke('closeRegisterWindow'),
-  openAddFriendWindow: () => ipcRenderer.invoke('openAddFriendWindow')
+  openAddFriendWindow: () => ipcRenderer.invoke('openAddFriendWindow'),
+  openAddSessionWindow: () => ipcRenderer.invoke('openAddSessionWindow'),
+  closeAddSessionWindow: () => ipcRenderer.invoke('closeAddSessionWindow'),
+  navigateMainWindow: (navPath: string) => ipcRenderer.invoke('navigateMainWindow', navPath),
+  onNavigateMainWindow: (callback) => {
+    ipcRenderer.on('onNavigateMainWindow', (_event, data) => callback(data))
+  }
 })
 
 // 工具API

@@ -21,44 +21,6 @@ CREATE TABLE IF NOT EXISTS user_profile (
     updated_at INTEGER NOT NULL -- 最后更新时间戳（毫秒）
 );
 
--- 群聊表
-CREATE TABLE IF NOT EXISTS "group" (
-    id TEXT PRIMARY KEY NOT NULL, -- 群聊ID
-    name TEXT NOT NULL, -- 群聊名称
-    create_user TEXT NOT NULL, -- 创建者用户ID
-    avatar TEXT DEFAULT 'default_group_avatar.png', -- 群头像文件名
-    signature TEXT DEFAULT '', -- 群简介
-    number INTEGER DEFAULT 0, -- 群成员数量
-    status INTEGER DEFAULT 0, -- 状态（0-正常，1-删除，2-禁用）
-    created_at INTEGER, -- 创建时间戳（毫秒）
-    updated_at INTEGER -- 最后更新时间戳（毫秒）
-);
-
--- 聊天消息表
-CREATE TABLE IF NOT EXISTS message (
-    id TEXT PRIMARY KEY NOT NULL, -- 消息ID
-    type INTEGER NOT NULL, -- 消息类型（1-文本，2-图片，3-文件等）
-    from_id TEXT NOT NULL, -- 发送者ID（用户ID）
-    to_id TEXT NOT NULL, -- 接收者ID（用户ID或群聊ID）
-    content TEXT, -- 消息内容（文本消息直接存储，其他类型存资源标识）
-    status INTEGER DEFAULT 1, -- 状态（1-正常，2-撤回，3-删除）
-    created_at INTEGER, -- 发送时间戳（毫秒）
-    updated_at INTEGER -- 状态更新时间戳（毫秒）
-);
-
--- 群聊成员关联表
-CREATE TABLE IF NOT EXISTS group_member (
-    id TEXT PRIMARY KEY NOT NULL, -- 记录ID
-    group_id TEXT NOT NULL, -- 所属群聊ID
-    user_id TEXT NOT NULL, -- 成员用户ID
-    remark TEXT, -- 群内备注名
-    status INTEGER DEFAULT 0, -- 成员状态（0-正常，1-禁用，2-退出）
-    role INTEGER DEFAULT 3, -- 成员角色（1-群主，2-管理员，3-普通成员）
-    created_at INTEGER, -- 加入时间戳（毫秒）
-    updated_at INTEGER, -- 信息更新时间戳（毫秒）
-    UNIQUE (group_id, user_id) -- 确保用户在群内唯一
-);
-
 -- 好友申请表
 CREATE TABLE IF NOT EXISTS friend_request (
     id TEXT PRIMARY KEY NOT NULL, -- 申请记录ID
@@ -72,6 +34,7 @@ CREATE TABLE IF NOT EXISTS friend_request (
     updated_at INTEGER -- 状态更新时间戳（毫秒）
 );
 
+-- 好友表
 CREATE TABLE IF NOT EXISTS user_friend (
     id            TEXT PRIMARY KEY, --AUTOINCREMENT COMMENT '关系ID，主键',
     user_id       TEXT NOT NULL, --COMMENT '用户ID',
@@ -82,4 +45,60 @@ CREATE TABLE IF NOT EXISTS user_friend (
     created_at    INTEGER, --COMMENT '创建时间',
     updated_at    INTEGER, --COMMENT '更新时间',
     CONSTRAINT uniq_user_friend UNIQUE (user_id, friend_id)
+);
+
+-- 群聊表
+CREATE TABLE IF NOT EXISTS chat_group (
+    id TEXT PRIMARY KEY, -- 群聊ID
+    name TEXT NOT NULL, -- 群聊名称
+    create_user TEXT NOT NULL, -- 创建者用户ID
+    avatar TEXT, -- 群头像文件名
+    signature TEXT DEFAULT '', -- 群简介
+    number INTEGER DEFAULT 0, -- 群成员数量
+    status INTEGER DEFAULT 0, -- 状态（0-正常，1-删除，2-禁用）
+    created_at INTEGER, -- 创建时间戳（毫秒）
+    updated_at INTEGER -- 最后更新时间戳（毫秒）
+);
+
+-- 群聊成员关联表
+CREATE TABLE IF NOT EXISTS group_member (
+    group_id TEXT NOT NULL, -- 所属群聊ID
+    user_id TEXT NOT NULL, -- 成员用户ID
+    remark TEXT, -- 群内备注名
+    status INTEGER, -- 成员状态（0-正常，1-禁用，2-退出）
+    role INTEGER, -- 成员角色（1-群主，2-管理员，3-普通成员）
+    created_at INTEGER, -- 加入时间戳（毫秒）
+    updated_at INTEGER, -- 信息更新时间戳（毫秒）
+    -- 联合主键：group_id + user_id
+    PRIMARY KEY (group_id, user_id)
+);
+
+-- 聊天会话表
+CREATE TABLE IF NOT EXISTS chat_session (
+    id TEXT PRIMARY KEY,
+    type INTEGER NOT NULL DEFAULT 1,
+    first_id TEXT NOT NULL,
+    second_id TEXT,
+    last_message_id TEXT,
+    last_message_content TEXT,
+    last_message_time INTEGER,
+    status INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- 聊天消息表
+CREATE TABLE IF NOT EXISTS chat_message (
+    session_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    type INTEGER NOT NULL,
+    from_id TEXT NOT NULL,
+    to_id TEXT NOT NULL,
+    content TEXT,
+    status INTEGER,
+    reply_to_id TEXT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    -- 联合主键：session_id + message_id
+    PRIMARY KEY (session_id, message_id)
 );

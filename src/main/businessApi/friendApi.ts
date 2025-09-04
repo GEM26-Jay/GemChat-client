@@ -100,7 +100,10 @@ export function registerFriendApiIpcHandlers(): void {
             msg: `不能添加自己`
           }
         }
-        const isAlreadyFriend: UserFriend = await userFriendDB.getByIds(user.id, request.toId)
+        const isAlreadyFriend = await userFriendDB.getFriendRelationsByUserIdAndTargetId(
+          user.id,
+          request.toId
+        )
         if (isAlreadyFriend && isAlreadyFriend.deleteStatus == 0) {
           return {
             isSuccess: false,
@@ -173,25 +176,6 @@ export function registerFriendApiIpcHandlers(): void {
       }
     }
   })
-  // friend-getById
-  ipcMain.handle(
-    'friend-getById',
-    async (_event: IpcMainInvokeEvent, id: string): Promise<ApiResult<UserFriend>> => {
-      try {
-        const result = await userFriendDB.getByIds((clientDataStore.get('user') as User).id, id)
-        return {
-          isSuccess: true,
-          data: result
-        }
-      } catch (err) {
-        console.log(`[IPC: getValidFriends]: ${err}`)
-        return {
-          isSuccess: false,
-          msg: `[IPC: getValidFriends]: ${err}`
-        }
-      }
-    }
-  )
   // friend-updateFriendRemark
   ipcMain.handle(
     'friend-updateFriendRemark',
@@ -270,6 +254,32 @@ export function registerFriendApiIpcHandlers(): void {
         return {
           isSuccess: false,
           msg: `[IPC: updateFriendRemark]: ${err}`
+        }
+      }
+    }
+  )
+  // friend-getByTargetId
+  ipcMain.handle(
+    'friend-getByTargetId',
+    async (_event: IpcMainInvokeEvent, targetId: string): Promise<ApiResult<UserFriend>> => {
+      try {
+        const user = clientDataStore.get('user') as User
+        const result = await userFriendDB.getFriendRelationsByUserIdAndTargetId(user.id, targetId)
+        if (result) {
+          return {
+            isSuccess: true,
+            data: result
+          }
+        } else {
+          return {
+            isSuccess: false
+          }
+        }
+      } catch (err) {
+        console.log(`[IPC: getValidFriends]: ${err}`)
+        return {
+          isSuccess: false,
+          msg: `[IPC: getValidFriends]: ${err}`
         }
       }
     }

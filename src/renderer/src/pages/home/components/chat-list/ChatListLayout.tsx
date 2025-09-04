@@ -1,84 +1,68 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import ChatListItem from './ChatListItem'
-import { ChatListItemType as ChatListItemType } from './types' // 注意别名避免冲突
 import styles from './ChatListLayout.module.css'
 import HorizontalSplitPanel from '../split-panel/HorizontalSplitPanel'
-import { Outlet, useNavigate } from 'react-router'
+import { Outlet, useNavigate, useParams } from 'react-router'
 import HeaderSearchBox from '../search-box/HeaderSearchBox'
-
-const chatListData: ChatListItemType[] = [
-  {
-    id: '1',
-    avatar: '',
-    title: '23级北呀呀呀呀呀呀呀呀呀呀呀呀。',
-    lastMessage: '徐老师: [链接] @SCNUer 学宿姚湘 (农3.4): [链接] 2025年',
-    time: '17:15',
-    unreadCount: 1,
-    isGroup: false
-  },
-  {
-    id: '2',
-    avatar: '',
-    title: '妈妈 3.29',
-    lastMessage: '哦',
-    time: '14:49',
-    unreadCount: 0,
-    isGroup: false
-  },
-  {
-    id: '3',
-    avatar: '',
-    title: '北斗23班级通知群',
-    lastMessage:
-      '姚湘 (农3.4): [链接] 2025年姚湘 (农3.4): [链接] 2025年姚湘 (农3.4): [链接] 2025年',
-    time: '2025/07/21',
-    unreadCount: 0,
-    isGroup: true
-  },
-  {
-    id: '4',
-    avatar: '',
-    title: '真真 12.27',
-    lastMessage: '闪退了',
-    time: '2025/07/09',
-    unreadCount: 0,
-    isGroup: false
-  },
-  {
-    id: '5',
-    avatar: '',
-    title: '公众号',
-    lastMessage: '杭州西湖风景名胜区: [链接] 诗画姚湘 (农3.4): [链接] 2025年',
-    time: '21:09',
-    unreadCount: 0,
-    isGroup: true
-  }
-  // 可继续添加更多模拟数据...
-]
+import { useQuery } from '@tanstack/react-query'
+import { ApiResult, ChatSession, User } from '@shared/types'
 
 const ChatListLayout: React.FC = () => {
   const [actId, setActId] = useState('ActivateChatId')
   const baseUrl = '/home/chat/'
   const nav = useNavigate()
+  const { sessionId } = useParams<string>()
+
+  useEffect(() => {
+    if (sessionId) {
+      setActId(sessionId)
+    }
+  }, [sessionId])
+
+  // 获取会话列表
+  const { data: chatSessions = [] } = useQuery<ChatSession[]>({
+    queryKey: ['chat_session'],
+    queryFn: () =>
+      window.businessApi.chat
+        .getChatSessions()
+        .then((apiResult: ApiResult<ChatSession[]>) =>
+          apiResult.isSuccess && apiResult.data ? apiResult.data : []
+        )
+        .catch(() => []),
+    staleTime: 30 * 60 * 1000
+  })
+
+  const { data: user } = useQuery<User | null>({
+    queryKey: ['current_user'],
+    queryFn: () =>
+      (window.clientData.get('user') as Promise<User>)
+        .then((user: User) => (user ? user : null))
+        .catch(() => null),
+    staleTime: 30 * 60 * 1000
+  })
 
   const leftPanel = (
     <div className={styles['leftPanel']}>
       <HeaderSearchBox
         searchCallBack={() => <div></div>}
-        addClickCallBack={() => {}}
+        addClickCallBack={() => {
+          window.windowsApi.openAddSessionWindow()
+        }}
       ></HeaderSearchBox>
 
       <ul className={styles['chatList']}>
-        {chatListData.map((item) => (
+        {chatSessions.map((item) => (
           <li
-            className={styles[actId === item.id ? 'chat-li--active' : 'chat-li']}
+            className={[styles['chat-li'], actId === item.id ? styles['chat-li--active'] : ''].join(
+              ' '
+            )}
             key={item.id}
             onClick={() => {
               setActId(item.id)
               nav(`${baseUrl}${item.id}`)
             }}
           >
-            <ChatListItem {...item} key={item.id} />
+            <ChatListItem chatSession={item} user={user as User} key={item.id} />
           </li>
         ))}
       </ul>

@@ -8,6 +8,7 @@ import { registerUserApiIpcHandlers } from './businessApi/userApi'
 import { registerLocalAccountApiIpcHandlers } from './businessApi/localAccountApi'
 import { nettyClient } from './tcp-client/client'
 import { registerFriendApiIpcHandlers } from './businessApi/friendApi'
+import { registerChatApiIpcHandlers } from './businessApi/chatApi'
 
 // ------------------------------
 // 1. IPC 处理器函数（按功能模块化）
@@ -24,6 +25,7 @@ function registerAllIpcHandlers(): void {
   registerLocalAccountApiIpcHandlers()
   registerUserApiIpcHandlers()
   registerFriendApiIpcHandlers()
+  registerChatApiIpcHandlers()
   // 未来新增的 IPC 模块只需在这里添加函数调用
 }
 
@@ -36,6 +38,7 @@ let loginWindow: BrowserWindow
 let registerWindow: BrowserWindow
 let mainWindow: BrowserWindow
 let addFriendWindow: BrowserWindow
+let addSessionWindow: BrowserWindow
 
 function createLoginWindow(): void {
   loginWindow = new BrowserWindow({
@@ -188,6 +191,45 @@ function createAddFriendWindow(): void {
   })
 }
 
+function createAddSessionWindow(): void {
+  addSessionWindow = new BrowserWindow({
+    width: 600,
+    height: 600,
+    resizable: false, // 允许调整大小
+    titleBarStyle: 'default', // 使用系统默认标题栏
+    frame: true, // 显示窗口框架
+    show: false,
+    autoHideMenuBar: true,
+    minimizable: false, // 禁止最小化
+    maximizable: false, // 允许最大化
+    closable: true, // 允许关闭
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      transparent: false // 禁用透明背景
+    }
+  })
+
+  addSessionWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    const devUrl = new URL(process.env['ELECTRON_RENDERER_URL'])
+    devUrl.pathname = '/addSession'
+    addSessionWindow.loadURL(devUrl.toString())
+    addSessionWindow.webContents.openDevTools()
+  } else {
+    addSessionWindow.loadFile(path.join(__dirname, '../renderer/addSession.html'))
+  }
+
+  addSessionWindow.on('ready-to-show', () => {
+    addSessionWindow.show()
+  })
+}
+
 // ------------------------------
 // 3. 应用生命周期
 // ------------------------------
@@ -231,6 +273,24 @@ app.whenReady().then(() => {
 
   ipcMain.handle('closeAddFriendWindow', async () => {
     addFriendWindow.close()
+  })
+
+  ipcMain.handle('openAddSessionWindow', async () => {
+    createAddSessionWindow()
+  })
+
+  ipcMain.handle('closeAddSessionWindow', async () => {
+    addSessionWindow.close()
+    notifyWindows('update', 'group_member')
+    notifyWindows('update', 'group')
+    notifyWindows('update', 'chat_session')
+  })
+
+  ipcMain.handle('navigateMainWindow', async (_event, route) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      // 向主窗口的渲染进程发送路由跳转命令
+      mainWindow.webContents.send('onNavigateMainWindow', route)
+    }
   })
 })
 

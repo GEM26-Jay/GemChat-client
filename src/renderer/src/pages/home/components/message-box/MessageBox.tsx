@@ -1,33 +1,40 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import styles from './MessageBox.module.css' // 共享样式文件
-
-export interface Message {
-  id: string
-  userId: string
-  userName?: string
-  avatarUrl?: string
-  msg: string
-  time: string
-  isMine: boolean
-}
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ChatMessage } from '@shared/types'
+import MessageItem from './MessageItem'
 
 interface MessageBoxProps {
-  messageList: Message[] // 使用 ChatBox 中定义的 Message 类型
+  userId: string
+  sessionId: string
+  isGroup: boolean
 }
 
-const MessageBox: React.FC<MessageBoxProps> = ({ messageList }) => {
+const MessageBox: React.FC<MessageBoxProps> = ({ userId, sessionId, isGroup }: MessageBoxProps) => {
+  const queryClient = useQueryClient()
+  const queryKey = ['chat_message', sessionId]
+
+  const { data: messages = [] } = useQuery<ChatMessage[]>({
+    queryKey: queryKey,
+    queryFn: () => [],
+    enabled: false
+  })
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      window.businessApi.chat.getMessagesBySessionId(sessionId, 1, 30).then((apiResult) => {
+        const list: ChatMessage[] = apiResult.data ? apiResult.data : []
+        list.sort((a, b) => a.createdAt - b.createdAt)
+        queryClient.setQueryData(queryKey, apiResult.data)
+      })
+    }
+  }, [messages, queryClient, queryKey, sessionId])
+
   return (
     <ul className={styles['message-box']}>
-      {messageList.map((message) => (
-        <li
-          key={message.id}
-          className={styles[message.isMine ? 'message-item-mine' : 'message-item-others']}
-        >
-          <img src={message.avatarUrl} className={styles['message-avatar']} />
-          <div className={styles['message-content']}>
-            <div className={styles['message-time']}>{message.time}</div>
-            <div className={styles['message-text']}>{message.msg}</div>
-          </div>
+      {messages.map((message) => (
+        <li key={message.id}>
+          <MessageItem userId={userId} isGroup={isGroup} message={message}></MessageItem>
         </li>
       ))}
     </ul>

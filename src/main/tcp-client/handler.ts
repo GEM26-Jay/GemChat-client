@@ -1,52 +1,9 @@
 import { tokenManager } from '../axios/axiosClient'
 import Protocol from './protocol'
 import { clientDataStore } from '../clientDataStore'
-import { FriendRequest, User, UserFriend } from '@shared/types'
 import { nettyClient } from './client'
-import { getFriendRequestSync, getUserFriendSync } from '../axios/axiosFriendApi'
-import { friendRequestDB } from '../db-manage/db_friendRequest'
-import { userFriendDB } from '../db-manage/db_friends'
-import { notifyWindows } from '../index'
-
-const handleFriendRequestSync = async (): Promise<void> => {
-  const user = clientDataStore.get('user') as User
-  const timestamp = await friendRequestDB.getLatestUpdateTimestamp(user.id)
-  const apiResult = await getFriendRequestSync(timestamp)
-  if (apiResult.isSuccess) {
-    if (apiResult.data) {
-      const requestList = apiResult.data as FriendRequest[]
-      for (const item of requestList) {
-        await friendRequestDB.upsertRequest(item)
-      }
-      notifyWindows('update', 'friend_request')
-      console.log('[handleFriendRequestSync]: 数据同步, 获取数据成功')
-    } else {
-      console.log('[handleFriendRequestSync]: 数据同步, 无需要同步的数据')
-    }
-  } else {
-    console.log('[handleFriendRequestSync]: 数据同步失败, 服务器访问失败')
-  }
-}
-
-const handleUserFriendSync = async (): Promise<void> => {
-  const user = clientDataStore.get('user') as User
-  const timestamp = await userFriendDB.getLatestUpdateTimestamp(user.id)
-  const apiResult = await getUserFriendSync(timestamp)
-  if (apiResult.isSuccess) {
-    if (apiResult.data) {
-      const friendList = apiResult.data as UserFriend[]
-      for (const item of friendList) {
-        await userFriendDB.upsertFriendRelation(item)
-      }
-      notifyWindows('update', 'user_friend')
-      console.log('[handleUserFriendSync]: 数据同步, 获取数据成功')
-    } else {
-      console.log('[handleUserFriendSync]: 数据同步, 无需要同步的数据')
-    }
-  } else {
-    console.log('[handleUserFriendSync]: 数据同步失败, 服务器访问失败')
-  }
-}
+import { User } from '@shared/types'
+import { handleChatSessionSync, handleFriendRequestSync, handleGroupSync, handleUserFriendSync, handleGroupMemberSync } from './syncHandler'
 
 export const registerClientHandler = (): void => {
   // 监听连接事件
@@ -83,6 +40,18 @@ export const registerClientHandler = (): void => {
       }
       case 'user_friend': {
         handleUserFriendSync()
+        break
+      }
+      case 'chat_session': {
+        handleChatSessionSync()
+        break
+      }
+      case 'chat_group': {
+        handleGroupSync()
+        break
+      }
+      case 'group_member': {
+        handleGroupMemberSync()
         break
       }
     }
