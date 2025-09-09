@@ -130,12 +130,13 @@ contextBridge.exposeInMainWorld('businessApi', {
       secondId: string
     ): Promise<ApiResult<ChatSession>> =>
       ipcRenderer.invoke('chat-getSingleSessionByUserIds', firstId, secondId),
-    getGroupSessionByGroupId: (
-      groupId: string
-    ): Promise<ApiResult<ChatSession>> =>
+    getGroupSessionByGroupId: (groupId: string): Promise<ApiResult<ChatSession>> =>
       ipcRenderer.invoke('chat-getGroupSessionByGroupId', groupId),
     createGroup: (dto: CreateGroupDTO): Promise<ApiResult<ChatGroup>> =>
-      ipcRenderer.invoke('chat-createGroup', dto)
+      ipcRenderer.invoke('chat-createGroup', dto),
+    onReceiveMessage: (callback) => {
+      ipcRenderer.on('receiveMessage', (_event, data) => callback(data))
+    }
   }
 })
 

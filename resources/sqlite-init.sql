@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS chat_session (
 
 -- 聊天消息表
 CREATE TABLE IF NOT EXISTS chat_message (
+    id INTEGER NOT NULL,
     session_id TEXT NOT NULL,
     message_id TEXT NOT NULL,
     type INTEGER NOT NULL,
@@ -98,7 +99,5 @@ CREATE TABLE IF NOT EXISTS chat_message (
     status INTEGER,
     reply_to_id TEXT NULL,
     created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    -- 联合主键：session_id + message_id
-    PRIMARY KEY (session_id, message_id)
+    updated_at INTEGER NOT NULL
 );

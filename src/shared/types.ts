@@ -173,14 +173,15 @@ export interface ChatSession {
  * 聊天消息类型
  */
 export interface ChatMessage {
-  id: string // 消息ID，主键
+  id: number // 主键
   sessionId: string // 会话ID
+  messageId: string
   type: number
   fromId: string // 发送者ID
   toId: string // 接收者ID（用户ID或群ID）
   content: string | null // 消息内容
   status: number
-  replyToId: string | null // 引用消息ID（回复功能）
+  replyToId?: string | null // 引用消息ID（回复功能）
   createdAt: number // 发送时间戳
   updatedAt: number // 更新时间戳
 }

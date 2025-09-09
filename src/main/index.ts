@@ -308,7 +308,7 @@ export function openLoginWindow(): void {
   createLoginWindow()
 }
 
-export function notifyWindows(topic: string, info: string): void {
+export function notifyWindows(topic: string, info: unknown): void {
   BrowserWindow.getAllWindows().forEach((window) => {
     // 检查窗口是否已关闭，避免操作已销毁的窗口
     if (!window.isDestroyed()) {

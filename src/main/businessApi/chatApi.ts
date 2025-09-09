@@ -5,6 +5,8 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { groupDB } from '../db-manage/db_group'
 import { CreateGroupDTO } from '@shared/DTO.types'
 import { postGroupAdd } from '../axios/axiosChatApi'
+import { nettyClient } from '../tcp-client/client'
+import Protocol from '../tcp-client/protocol'
 
 export function registerChatApiIpcHandlers(): void {
   // chat-getSessions
@@ -193,6 +195,31 @@ export function registerChatApiIpcHandlers(): void {
           isSuccess: false,
           msg: result.msg
         }
+      }
+    }
+  )
+  // chat-sendMessage
+  ipcMain.handle(
+    'chat-sendMessage',
+    async (
+      _event: IpcMainInvokeEvent,
+      sessionId: string,
+      content: string
+    ): Promise<ApiResult<void>> => {
+      try {
+        const protocol = new Protocol()
+        const user = clientDataStore.get('user') as User
+        protocol.setFromId(BigInt(user.id))
+        protocol.setMessage(content)
+        protocol.setToId(BigInt(sessionId))
+        protocol.setVersion(1)
+        protocol.setTimeStamp(BigInt(Date.now()))
+        nettyClient.sendProtocol(protocol)
+        return {
+          isSuccess: true
+        }
+      } catch (err) {
+        return { isSuccess: false, msg: `[IPC: chat-sendMessage]: ${err}` }
       }
     }
   )

@@ -52,6 +52,7 @@ declare global {
         ) => Promise<ApiResult<ChatSession>>
         getGroupSessionByGroupId: (groupId: string) => Promise<ApiResult<ChatSession>>
         createGroup: (dto: CreateGroupDTO) => Promise<ApiResult<Group>>
+        onReceiveMessage: (callback) => void
       }
     }
     utilApi: {

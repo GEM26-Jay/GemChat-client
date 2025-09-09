@@ -3,7 +3,14 @@ import Protocol from './protocol'
 import { clientDataStore } from '../clientDataStore'
 import { nettyClient } from './client'
 import { User } from '@shared/types'
-import { handleChatSessionSync, handleFriendRequestSync, handleGroupSync, handleUserFriendSync, handleGroupMemberSync } from './syncHandler'
+import {
+  handleChatSessionSync,
+  handleFriendRequestSync,
+  handleGroupSync,
+  handleUserFriendSync,
+  handleGroupMemberSync
+} from './handlers/syncHandler'
+import { handleMessageReceive } from './handlers/messageHandler'
 
 export const registerClientHandler = (): void => {
   // 监听连接事件
@@ -22,6 +29,7 @@ export const registerClientHandler = (): void => {
 
   // 监听消息事件
   nettyClient.on('message', (protocol: Protocol) => {
+    handleMessageReceive(protocol)
     console.log('收到服务器消息:', protocol.getMessageString())
   })
 

@@ -1,7 +1,7 @@
-import { friendRequestDB } from '../db-manage/db_friendRequest'
-import { notifyWindows } from '..'
-import { clientDataStore } from '../clientDataStore'
-import { getFriendRequestSync, getUserFriendSync } from '../axios/axiosFriendApi'
+import { friendRequestDB } from '../../db-manage/db_friendRequest'
+import { notifyWindows } from '../..'
+import { clientDataStore } from '../../clientDataStore'
+import { getFriendRequestSync, getUserFriendSync } from '../../axios/axiosFriendApi'
 import {
   ApiResult,
   ChatMessage,
@@ -12,16 +12,16 @@ import {
   User,
   UserFriend
 } from '@shared/types'
-import { userFriendDB } from '../db-manage/db_friends'
+import { userFriendDB } from '../../db-manage/db_friends'
 import {
   ChatMessageSyncItem,
   getChatMessageSyncBatch,
   getChatSessionSync,
   getGroupMemberSync,
   getGroupSync
-} from '../axios/axiosChatApi'
-import { chatSessionDB } from '../db-manage/db_chatSession'
-import { groupDB } from '../db-manage/db_group'
+} from '../../axios/axiosChatApi'
+import { chatSessionDB } from '../../db-manage/db_chatSession'
+import { groupDB } from '../../db-manage/db_group'
 
 export const handleFriendRequestSync = async (): Promise<void> => {
   const user = clientDataStore.get('user') as User

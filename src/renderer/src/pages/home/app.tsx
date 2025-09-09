@@ -12,7 +12,8 @@ const queryClient = new QueryClient({
     queries: {
       gcTime: 30 * 60 * 1000, // 缓存保留30分钟
       staleTime: Infinity,
-      retry: 0
+      retry: 0,
+      refetchInterval: 5 * 60 * 1000
     }
   }
 })
