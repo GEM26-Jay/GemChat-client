@@ -121,7 +121,9 @@ const AddSessionBoard: React.FC = () => {
         alert('发生异常!无法找到会话')
       }
     } else {
-      const fullName = selectedFriends.map((item) => item.username).join(',')
+      let fullName = selectedFriends.map((item) => item.username).join(',')
+      const user = window.clientData.get("user") as User
+      fullName = user.username + fullName
       const groupName = fullName.length > 50 ? `${fullName.slice(0, 50)}...` : fullName
 
       const apiResult = await window.businessApi.chat.createGroup({

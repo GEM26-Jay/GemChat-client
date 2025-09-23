@@ -1,5 +1,5 @@
 import { Database } from 'sqlite'
-import { getDb } from './database'
+import { dbManager } from './database'
 import { ChatGroup, GroupMember } from '@shared/types'
 
 /**
@@ -61,18 +61,12 @@ const convertGroupMemberRow2GroupMember = (data: GroupMemberRow): GroupMember =>
  * 封装群组表和群组成员表的CRUD操作
  */
 class GroupDB {
-  private dbPromise: Promise<Database>
-
-  constructor() {
-    this.dbPromise = getDb()
-  }
-
   /**
    * 确保数据库连接可用
    */
   private async ensureDb(): Promise<Database> {
     try {
-      const db = await this.dbPromise
+      const db = await dbManager.getPrivateDb()
       if (!db) throw new Error('数据库连接失败')
       return db
     } catch (error) {
@@ -103,7 +97,10 @@ class GroupDB {
     const db = await this.ensureDb()
     // 创建与ID数量匹配的占位符 (?, ?, ?)
     const placeholders = ids.map(() => '?').join(',')
-    const rows = await db.all<ChatGroupRow[]>(`SELECT * FROM chat_group WHERE id IN (${placeholders})`, ids)
+    const rows = await db.all<ChatGroupRow[]>(
+      `SELECT * FROM chat_group WHERE id IN (${placeholders})`,
+      ids
+    )
 
     return rows.map(convertGroupRow2Group)
   }

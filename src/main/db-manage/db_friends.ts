@@ -1,5 +1,5 @@
 import { Database } from 'sqlite'
-import { getDb } from './database'
+import { dbManager } from './database'
 import { UserFriend } from '@shared/types'
 
 // 数据库表结构对应的行记录类型（下划线命名，与表字段完全对应）
@@ -35,16 +35,12 @@ const convertRowToUserFriend = (row: UserFriendRow): UserFriend | null => {
 }
 
 class UserFriendDB {
-  private dbPromise: Promise<Database>
-
-  constructor() {
-    this.dbPromise = getDb()
-  }
-
-  /** 确保数据库连接有效 */
+  /**
+   * 确保数据库连接可用
+   */
   private async ensureDb(): Promise<Database> {
     try {
-      const db = await this.dbPromise
+      const db = await dbManager.getPrivateDb()
       if (!db) throw new Error('数据库连接失败')
       return db
     } catch (error) {

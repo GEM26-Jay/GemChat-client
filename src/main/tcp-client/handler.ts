@@ -1,25 +1,40 @@
 import { tokenManager } from '../axios/axiosClient'
 import Protocol from './protocol'
 import { clientDataStore } from '../clientDataStore'
-import { nettyClient } from './client'
+import { initNettyClient, nettyClients } from './client'
 import { User } from '@shared/types'
 import {
   handleChatSessionSync,
   handleFriendRequestSync,
   handleGroupSync,
   handleUserFriendSync,
-  handleGroupMemberSync
+  handleGroupMemberSync,
+  handleChatMessageSync
 } from './handlers/syncHandler'
 import { handleMessageReceive } from './handlers/messageHandler'
 
-export const registerClientHandler = (): void => {
+export const registerNettyClient = async (): Promise<void> => {
+  let nettyClient
+  if (nettyClients.length == 0) {
+    nettyClient = await initNettyClient()
+  } else {
+    nettyClient = nettyClients[0]
+  }
+
+  if (nettyClient) {
+    nettyClient.connect()
+  } else {
+    console.log('网络连接失败')
+    return
+  }
+
   // 监听连接事件
   nettyClient.on('connected', () => {
     console.log('Netty: 成功连接到服务器')
 
     // 创建并发送协议消息
     const protocol = new Protocol()
-    protocol.setType(Protocol.AUTH)
+    protocol.setType(Protocol.ORDER_AUTH)
     protocol.setFromId(BigInt((clientDataStore.get('user') as User).id))
     protocol.setToId(0n)
     protocol.setMessage(tokenManager.getToken())
@@ -30,7 +45,6 @@ export const registerClientHandler = (): void => {
   // 监听消息事件
   nettyClient.on('message', (protocol: Protocol) => {
     handleMessageReceive(protocol)
-    console.log('收到服务器消息:', protocol.getMessageString())
   })
 
   // 监听系统推送
@@ -60,6 +74,10 @@ export const registerClientHandler = (): void => {
       }
       case 'group_member': {
         handleGroupMemberSync()
+        break
+      }
+      case 'chat_message': {
+        handleChatMessageSync()
         break
       }
     }

@@ -12,7 +12,7 @@
 /* 上方面板：相对定位，承载分割条 */
 .top-panel {
   width: 100%;
-  overflow: auto;
+  overflow: hidden;
   box-sizing: border-box;
   flex-shrink: 0; /* 禁止收缩 */
   position: relative; /* 关键：使分割条可绝对定位 */

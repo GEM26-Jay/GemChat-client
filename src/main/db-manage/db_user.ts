@@ -1,6 +1,6 @@
 import { User } from '@shared/types'
 import { Database } from 'sqlite'
-import { getDb } from './database'
+import { dbManager } from './database'
 
 /**
  * 数据库表行记录类型（与表结构对应）
@@ -43,18 +43,12 @@ const DbUserRow2User = (data: DbUserRow): User => {
  * 封装用户表的CRUD操作
  */
 class UserDB {
-  private dbPromise: Promise<Database>
-
-  constructor() {
-    this.dbPromise = getDb()
-  }
-
   /**
    * 确保数据库连接可用
    */
   private async ensureDb(): Promise<Database> {
     try {
-      const db = await this.dbPromise
+      const db = await dbManager.getPrivateDb()
       if (!db) throw new Error('数据库连接失败')
       return db
     } catch (error) {
@@ -77,7 +71,8 @@ class UserDB {
    */
   async getById(id: string): Promise<User | null> {
     const db = await this.ensureDb()
-    const result: DbUserRow[] = await db.all<DbUserRow[]>('SELECT * FROM user_profile WHERE id = ?', 
+    const result: DbUserRow[] = await db.all<DbUserRow[]>(
+      'SELECT * FROM user_profile WHERE id = ?',
       id
     )
     return result.length > 0 ? DbUserRow2User(result[0]) : null
@@ -141,11 +136,7 @@ class UserDB {
   }
 }
 
-
 /**
  * 导出单例实例
  */
 export const userDB: UserDB = new UserDB()
-
-// userDB.getAll()
-// userDB.getById('344038612569948160')

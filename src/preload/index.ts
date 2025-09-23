@@ -11,7 +11,9 @@ import {
   RegisterData,
   UniversalFile,
   User,
-  UserFriend
+  UserFriend,
+  MimeContentTypeMap,
+  FileMap
 } from '../shared/types'
 import { CreateGroupDTO } from '@shared/DTO.types'
 
@@ -33,13 +35,13 @@ contextBridge.exposeInMainWorld('clientData', {
 contextBridge.exposeInMainWorld('fileManager', {
   getUserFile: async (
     fileName: string,
-    contentType: null | 'Buffer' | 'Base64' | 'Text'
+    contentType: null | 'ArrayBuffer' | 'Base64' | 'Text'
   ): Promise<ApiResult<UniversalFile>> => {
     return await ipcRenderer.invoke('getUserFile', fileName, contentType)
   },
   getAvatar: async (
     fileName: string,
-    contentType: null | 'Buffer' | 'Base64'
+    contentType: null | 'ArrayBuffer' | 'Base64'
   ): Promise<ApiResult<UniversalFile>> => {
     return await ipcRenderer.invoke('getAvatar', fileName, contentType)
   },
@@ -49,11 +51,12 @@ contextBridge.exposeInMainWorld('fileManager', {
   uploadAvatar: async (file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
     return await ipcRenderer.invoke('uploadAvatar', file)
   },
-  openFileDialog: async (
-    contentType: null | 'Buffer' | 'Base64' | 'Text'
-  ): Promise<ApiResult<UniversalFile[]>> => {
-    return await ipcRenderer.invoke('openFileDialog', contentType)
-  }
+  openFileDialog: async (map: MimeContentTypeMap): Promise<ApiResult<UniversalFile[]>> => {
+    return await ipcRenderer.invoke('openFileDialog', map)
+  },
+  openImageViewer: async (path: string): Promise<void> => {
+    return await ipcRenderer.invoke('openImageViewer', path)
+  },
 })
 
 // 暴露业务相关API
@@ -136,7 +139,20 @@ contextBridge.exposeInMainWorld('businessApi', {
       ipcRenderer.invoke('chat-createGroup', dto),
     onReceiveMessage: (callback) => {
       ipcRenderer.on('receiveMessage', (_event, data) => callback(data))
-    }
+    },
+    sendMessage: (
+      sessionId: string,
+      type: number,
+      content: string,
+      timeStamp?: number
+    ): Promise<ApiResult<ChatMessage>> =>
+      ipcRenderer.invoke('chat-sendMessage', sessionId, type, content, timeStamp)
+  },
+  file: {
+    getAll: (): Promise<ApiResult<FileMap[]>> => ipcRenderer.invoke('file-getAll'),
+    getByCursor: (startId: number, size: number): Promise<ApiResult<FileMap[]>> =>
+      ipcRenderer.invoke('file-getByCursor', startId, size),
+    add: (fileMap: FileMap): Promise<ApiResult<void>> => ipcRenderer.invoke('file-add', fileMap),
   }
 })
 

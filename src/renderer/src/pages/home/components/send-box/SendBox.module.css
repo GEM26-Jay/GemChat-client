@@ -1,84 +1,110 @@
+/* 发送框整体容器 */
 .send-box-wrapper {
   display: flex;
-  flex: 1;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  flex-direction: column; /* 元素竖直排列 */
+  background-color: #1e1e1e;
 }
 
-/* 工具栏容器：作为按钮的父容器，需设置明确高度参考（这里用百分比需确保父级有高度，也可用固定值） */
+/* 工具栏容器 */
 .chat-toolbar {
-  width: 100%;
-  /* 假设父容器高度可通过父级传递，这里先用 min-height 演示，实际根据项目调整，比如父级是窗口高度的话可以用 height: 100vh 等 */
-  height: 40px; 
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 12px;
   background-color: #2c2c2c;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid #3a3a3a;
   box-sizing: border-box;
-
-  /* 禁止容器在任何情况下伸缩 */
+  height: 48px;
   flex-shrink: 0;
-  flex-grow: 0;
 }
 
-/* 左侧按钮容器 */
-.chat-toolbar-left {
+/* 左侧/右侧按钮容器 */
+.chat-toolbar-left, .chat-toolbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-/* 右侧按钮容器 */
-.chat-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
 /* 工具栏按钮通用样式 */
 .toolbar-button {
-  background-color: #3a3a3a;
-  color: #fff;
+  background-color: transparent;
+  color: #ccc;
   border: none;
   border-radius: 6px;
-  height: 32px; 
-  width: 32px; 
+  height: 36px;
+  width: 36px;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
   transition: all 0.2s ease;
-  flex-shrink: 0;
-  /* 让按钮内图标自适应缩放 */
-  position: relative; 
+  position: relative;
 }
 
-/* 图标样式：自适应按钮大小 */
 .toolbar-button-icon {
-  /* 让图标填充按钮内部空间，同时保持比例 */
-  width: 60%; 
-  height: 60%;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
 }
 
-/* 按钮悬浮交互 */
+/* 按钮交互状态 */
 .toolbar-button:hover {
-  background-color: #4f4f4f;
+  background-color: #3a3a3a;
+  color: #fff;
   transform: scale(1.05);
 }
 
-/* 按钮点击态 */
 .toolbar-button:active {
-  background-color: #5c5c5c;
+  background-color: #4f4f4f;
   transform: scale(0.98);
 }
 
-/* 消息发送框容器 */
+.toolbar-button:disabled {
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 发送按钮特殊样式 */
+.send-button {
+  background-color: #4caf50;
+  color: #fff;
+  font-weight: 500;
+  padding: 0 16px;
+  width: auto;
+}
+
+.send-button:hover {
+  background-color: #55c85a;
+}
+
+.send-button.disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 计算指纹提示 */
+.calculating-fingerprint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #2c2c2c;
+  color: #ccc;
+  font-size: 13px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.calculating-icon {
+  color: #4caf50;
+  width: 16px;
+  height: 16px;
+}
+
+/* 输入框与附件区容器 */
 .sendbox {
   flex: 1;
   display: flex;
@@ -86,92 +112,211 @@
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  background-color: transparent;
-  padding: 2px;
+  background-color: #1c1c1c;
+  padding: 8px;
 }
 
 /* 多行输入框样式 */
 .sendbox-text {
   flex: 1;
-  padding: 8px;
-  border: none;
+  padding: 10px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
   outline: none;
   resize: none;
-  background-color: transparent;
+  background-color: #2c2c2c;
   color: #fff;
-  text-align: justify; /* 文本两端对齐 */
-  box-sizing: border-box; /* 确保 padding 不影响总高度 */
+  font-size: 14px;
+  line-height: 1.5;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
 }
 
+.sendbox-text:focus {
+  border-color: #7b8a7c;
+}
+
+.sendbox-text:disabled {
+  background-color: #262626;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* 附件列表外层容器 */
 .sendbox-attaches {
-  display: flex;
-  gap: 6px; /* 附件项之间的间距 */
-  overflow-x: auto; /* 水平滚动 */
-  overflow-y: hidden; /* 禁止垂直滚动 */
-  scrollbar-width: thin; /* 窄滚动条 */
-  scrollbar-color: rgba(150, 150, 150, 0.5) transparent;
-  -webkit-overflow-scrolling: touch; /* 移动端平滑滚动 */
-  /* 去除ul默认样式 */
   list-style: none;
+  padding: 8px 50px 0px 50px;
   margin: 0;
-  padding: 4px 8px;
-  border-top: 1px solid #4682B4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: left;
 }
 
-/* 单个附件项：垂直排列（图标在上，文件名在下） */
+/* 单个附件项容器 */
 .sendbox-attach-item {
-  flex: 0 0 auto; /* 不伸缩，保持固定宽度 */
-  display: flex;
-  flex-direction: column; /* 垂直排列图标和文件名 */
-  align-items: center; /* 水平居中 */
-  width: 40px; /* 固定宽度，确保文件名有足够空间 */
-  height: 40px;
-  position: relative; /* 用于删除按钮定位 */
+  position: relative;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  border-radius: 8px;
+  background-color: #2c2c2c;
+  border: 1px solid #3a3a3a;
+  z-index: 1;
 }
 
-.sendbox-attach-icon {
-  width: 30px;
-  height: 30px;
+/* 预览区容器 */
+.sendbox-attach-show {
+  width: 100%;
+  height: 100%;
   display: flex;
-  color: #fff;
   align-items: center;
   justify-content: center;
-  border: 1px solid #aaa;
+  position: relative;
+}
+
+.sendbox-attach-info span {
+  position: absolute;
+  top: -25px; /* 距离父容器顶部 25px，确保不重叠 */
+  left: 50%; /* 先定位到父容器水平中点 */
+  transform: translateX(-50%); /* 向左偏移自身 50%，实现完全居中 */
+  max-width: 200px; /* 按你的需求限制最大宽度 */
+  padding: 2px 6px; /* 增加内边距，文本不贴边 */
+  border-radius: 3px; /* 轻微圆角，优化视觉 */
+  background-color: rgba(208, 201, 201, 0.85); /* 深色背景，保证文本清晰（适配深色主题） */
+  color: #151111; /* 白色文本，高对比度 */
+  font-size: 12px; /* 适配小尺寸容器的字体大小 */
+  line-height: 1.4; /* 优化行高，提升可读性 */
+  white-space: nowrap; /* 禁止文本换行，保持一行 */
+  text-overflow: ellipsis; /* 超出部分显示省略号，避免截断 */
+  overflow: hidden;
+  pointer-events: none; /* 避免文本框遮挡鼠标交互（如点击删除按钮） */
+  z-index: 100; /* 确保在所有附件元素上方，不被遮挡 */
+  opacity: 0; /* 默认完全透明（隐藏） */
+  visibility: hidden; /* 辅助隐藏，避免占位 */
+  transition: opacity 0.2s ease, visibility 0.2s ease; /* 平滑显示/隐藏 */
+}
+
+/* 当鼠标悬停在 .sendbox-attach-item 上时，显示其内部的 span */
+.sendbox-attach-item:hover .sendbox-attach-info span {
+  opacity: 1; /* 完全不透明（显示） */
+  visibility: visible; /* 可见状态 */
+}
+
+/* 图片预览样式 */
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: 1px solid #151111;
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.sendbox-attach-show svg {
+  width: 80%;
+  height: 80%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.2s ease;
+  color: #fff;
+}
+
+.sendbox-attach-item:hover .preview-img {
+  opacity: 0.7;
+}
+
+/* 非图片文件图标样式 */
+.sendbox-attach-show .file-icon {
+  width: 28px;
+  height: 28px;
+  color: #ccc;
+}
+
+/* 上传中动画图标 */
+.sendbox-attach-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4caf50;
+  background-color: rgba(44, 44, 44, 0.8);
+  z-index: 10;
+  font-size: 20px;
+}
+
+/* 上传失败图标 */
+.sendbox-attach-failed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff0000;
+  background-color: rgba(44, 44, 44, 0.8);
+  z-index: 10;
+  font-size: 24px;
+  opacity: 50%;
+  border: solid 3px #ff0000;
   border-radius: 4px;
 }
 
-.sendbox-attach-filename {
-  width: 100%; /* 继承父元素宽度 */
-  text-align: center; /* 文本居中 */
-  font-size: 8px;
-  color: #fff; /* 文件名颜色，根据主题调整 */
-  white-space: nowrap; /* 不换行 */
-  overflow: hidden; /* 溢出隐藏 */
-  text-overflow: ellipsis; /* 超出显示省略号 */
-  padding-top: 2px;
-}
-
-.sendbox-attach-delete-bn {
+/* 取消（删除）图标 */
+.sendbox-attach-cancel {
   position: absolute;
-  top: 0px; /* 图标顶部向外偏移5px */
-  right: 0px; /* 基于附件项右侧定位 */
-  width: 12px;
-  height: 12px;
-  background-color: rgba(244, 26, 26, 0.8);
-  color: white;
-  border: none;
-  border-radius: 50%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  cursor: pointer;
-  opacity: 0; /* 默认隐藏 */
+  color: #ff0000;
+  background-color: transparent;
+  z-index: 20;
+  font-size: 24px;
+  opacity: 0%;
   transition: opacity 0.2s ease;
-  padding: 0; /* 去除默认按钮内边距 */
+  border: solid 3px #ff0000;
+  border-radius: 4px;
 }
 
-/* 鼠标悬停附件项时显示删除按钮 */
-.sendbox-attach-item:hover .sendbox-attach-delete-bn {
-  opacity: 1;
+.sendbox-attach-item:hover .sendbox-attach-cancel {
+  color: #ff0000;
+  opacity: 50%;
+}
+
+/* 旋转动画定义 */
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 文件选择输入框 - 隐藏但保持功能 */
+.file-select-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
 }

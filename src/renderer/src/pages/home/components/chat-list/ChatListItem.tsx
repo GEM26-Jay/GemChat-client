@@ -4,6 +4,38 @@ import LocalImage from '../LocalImage'
 import { ApiResult, ChatSession, ChatGroup, User, UserFriend } from '@shared/types'
 import { useQuery } from '@tanstack/react-query'
 
+const formatRelativeTime = (timestamp: number): string => {
+  const date = new Date(timestamp)
+  const now = new Date()
+
+  // 获取年月日时分
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+
+  // 判断是否为同一天
+  const isSameDay =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear()
+
+  // 判断是否为同一年
+  const isSameYear = date.getFullYear() === now.getFullYear()
+
+  if (isSameDay) {
+    // 同一天显示 时:分
+    return `${hours}:${minutes}`
+  } else if (isSameYear) {
+    // 同一年显示 月:日
+    return `${month}月${day}日`
+  } else {
+    // 不同年显示 年-月-日
+    return `${year}年${month}月${day}日`
+  }
+}
+
 export interface ChatListItemType {
   id: string // 聊天会话唯一标识
   avatar: string // 头像图片地址
@@ -73,12 +105,13 @@ const ChatListItem: React.FC<{ chatSession: ChatSession; user: User }> = ({
       : targetUser?.username
   const time = chatSession.lastMessageTime
   const lastMessage = chatSession.lastMessageContent
-  const unreadCount = 1
+  const unreadCount = 0
 
   return (
     <div className={styles['chat-list-item-wrapper']}>
       {/* 头像区域 */}
       <div className={styles['chat-avatar']}>
+        {isGroup && <div className={styles['chat-title-label']}>群聊</div>}
         <LocalImage fileName={avatar}></LocalImage>
         {unreadCount !== undefined && unreadCount > 0 && (
           <span className={styles['unread-badge']}>{unreadCount}</span>
@@ -88,10 +121,9 @@ const ChatListItem: React.FC<{ chatSession: ChatSession; user: User }> = ({
       <div className={styles['chat-content']}>
         <div className={styles['chat-info']}>
           <div className={styles['chat-title']}>
-            {isGroup && <div className={styles['chat-title-label']}>群聊</div>}
             <span className={styles['chat-title-text']}>{title}</span>
           </div>
-          <span className={styles['chat-time']}>{time ? time : <br></br>}</span>
+          <span className={styles['chat-time']}>{time ? formatRelativeTime(time) : <br></br>}</span>
         </div>
         <p className={styles['chat-last-message']}>
           {lastMessage} <br></br>

@@ -111,13 +111,16 @@ export async function getGroupMemberSync(lastUpdateAt: number): Promise<ApiResul
 
 export interface ChatMessageSyncItem {
   sessionId: string
-  lastMessageId: string
+  lastMessageId: string | null
 }
 
 export async function getChatMessageSyncBatch(
   data: ChatMessageSyncItem[]
 ): Promise<ApiResult<ChatMessage[]>> {
-  const result = await axiosClient.post<ApiResult<ChatMessage[]>>('/api/group/member/sync', data)
+  const result = await axiosClient.post<ApiResult<ChatMessage[]>>(
+    '/api/chat/message/syncBatch',
+    data
+  )
   const apiResult = result.data
   return apiResult
 }

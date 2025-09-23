@@ -24,7 +24,7 @@ export interface RawResponse<T = void> {
 
 // 创建Axios实例
 export const axiosClient = axios.create({
-  baseURL: 'http://localhost:8088/',
+  baseURL: 'http://192.168.137.1:8888/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -62,7 +62,9 @@ axiosClient.interceptors.request.use(
 // 响应拦截器：统一包装ApiResult到data中
 axiosClient.interceptors.response.use(
   (response: AxiosResponse<RawResponse>): AxiosResponse<ApiResult> => {
-    console.log(`[axiosClient]: 返回结果: ${JSON.stringify(response.data)}`)
+    console.log(
+      `[axiosClient]: 请求: ${response.config.url}, 返回结果: ${JSON.stringify(response.data)}`
+    )
     // 成功响应：后端RawResponse转换为ApiResult
     return {
       ...response,

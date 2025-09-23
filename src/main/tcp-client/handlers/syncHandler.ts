@@ -22,6 +22,7 @@ import {
 } from '../../axios/axiosChatApi'
 import { chatSessionDB } from '../../db-manage/db_chatSession'
 import { groupDB } from '../../db-manage/db_group'
+import { saveMessage } from './messageHandler'
 
 export const handleFriendRequestSync = async (): Promise<void> => {
   const user = clientDataStore.get('user') as User
@@ -129,24 +130,41 @@ export const handleChatMessageSync = async (): Promise<void> => {
   const groupIds: string[] = await groupDB.getGroupIdsByUserId(user.id)
   const groupSessions: ChatSession[] = await chatSessionDB.getGroupSessionsByGroupIds(groupIds)
   const sessionList: ChatSession[] = singleSessions.concat(groupSessions)
-  const itemList: ChatMessageSyncItem[] = sessionList.map((item) => {
+  // 1. 异步生成包含 Promise 的数组（每个元素对应一个异步请求结果）
+  const promiseList: Promise<ChatMessageSyncItem>[] = sessionList.map(async (item) => {
+    // 回调标记为 async，返回 Promise
     return {
       sessionId: item.id,
-      lastMessageId: item.lastMessageId
-    } as ChatMessageSyncItem
+      // 2. 等待异步方法执行完成，获取 lastMessageId
+      lastMessageId: await chatSessionDB.getLastMessageIdBySessionId(item.id)
+    }
   })
+
+  // 3. 等待所有 Promise 完成，得到最终的 ChatMessageSyncItem 数组
+  const itemList: ChatMessageSyncItem[] = await Promise.all(promiseList)
   const apiResult: ApiResult<ChatMessage[]> = await getChatMessageSyncBatch(itemList)
   if (apiResult.isSuccess) {
     if (apiResult.data) {
       for (const item of apiResult.data) {
-        chatSessionDB.addOrUpdateMessage(item)
+        saveMessage(item)
       }
-      notifyWindows('update', 'group_member')
-      console.log('[handleChatSessionSync]: 数据同步, 获取数据成功')
+      notifyWindows('update', 'chat_message')
+      notifyWindows('update', 'chat_session')
+      console.log('[handleChatMessageSync]: 数据同步, 获取数据成功')
     } else {
-      console.log('[handleChatSessionSync]:  数据同步, 无需同步数据')
+      console.log('[handleChatMessageSync]:  数据同步, 无需同步数据')
     }
   } else {
-    console.log('[handleChatSessionSync]:  数据同步失败, 服务器访问失败')
+    console.log('[handleChatMessageSync]:  数据同步失败, 服务器访问失败')
   }
+}
+
+export const HandleAllSync = async (): Promise<void> => {
+  // 注意同步的先后顺序
+  await handleFriendRequestSync()
+  await handleUserFriendSync()
+  await handleGroupSync()
+  await handleGroupMemberSync()
+  await handleChatSessionSync()
+  await handleChatMessageSync()
 }

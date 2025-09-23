@@ -8,6 +8,9 @@ import FriendRequestBox from './components/friend-request-box/FriendRequestBox'
 
 import UserInfoPanel from './components/user-info-panel/UserInfoPanel'
 import FriendBlockBox from './components/friend-block-box/FriendBlockBox'
+import SelfInfoPanel from './components/self-info-panel/SelfInfoPanel'
+import FileBox from './components/file-box/FileBox'
+import SettingPanel from './components/setting-pannel/SettingPanel'
 
 const router = createBrowserRouter([
   {
@@ -48,19 +51,19 @@ const router = createBrowserRouter([
       },
       {
         path: 'chat-file',
-        element: <div>聊天文件</div>
+        element: <FileBox></FileBox>
       },
       {
         path: 'moment',
-        element: <div>朋友圈</div>
+        element: <div>朋友圈功能暂未开放</div>
       },
       {
         path: 'profile',
-        element: <div>个人中心</div>
+        element: <SelfInfoPanel></SelfInfoPanel>
       },
       {
         path: 'setting',
-        element: <div>朋友圈</div>
+        element: <SettingPanel></SettingPanel>
       }
     ]
   }

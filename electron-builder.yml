@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: wechat-client
+appId: com.zcj.app
+productName: ChatStore
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: wechat-client
+  executableName: ChatStore
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

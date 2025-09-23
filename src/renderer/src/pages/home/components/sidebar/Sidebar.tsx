@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './Sidebar.module.css'
-import { FaComment, FaFolder, FaImages, FaUserFriends, FaCog, FaUserCircle } from 'react-icons/fa'
+import { FaComment, FaFolder, FaUserFriends, FaCog, FaUserCircle } from 'react-icons/fa'
 import LocalImage from '../LocalImage'
 import { User } from '@shared/types'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
@@ -16,10 +16,12 @@ interface SidebarItem {
 const baseUrl = '/home/'
 
 const menuItems: SidebarItem[] = [
-  { label: '聊天', path: `${baseUrl}chat`, icon: <FaComment />, badge: 3 },
-  { label: '通讯录', path: `${baseUrl}friend`, icon: <FaUserFriends />, badge: 1 },
+  // { label: '聊天', path: `${baseUrl}chat`, icon: <FaComment />, badge: 3 },
+  // { label: '通讯录', path: `${baseUrl}friend`, icon: <FaUserFriends />, badge: 1 },
+  { label: '聊天', path: `${baseUrl}chat`, icon: <FaComment /> },
+  { label: '通讯录', path: `${baseUrl}friend`, icon: <FaUserFriends /> },
   { label: '文件箱', path: `${baseUrl}chat-file`, icon: <FaFolder /> },
-  { label: '朋友圈', path: `${baseUrl}moment`, icon: <FaImages /> }
+  // { label: '朋友圈', path: `${baseUrl}moment`, icon: <FaImages /> }
 ]
 
 const userSettingsItems: SidebarItem[] = [

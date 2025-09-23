@@ -6,9 +6,17 @@ import { registerDataIpcHandlers } from './clientDataStore'
 import { registerFileManageIpcHandlers } from './file-manage/fileManage'
 import { registerUserApiIpcHandlers } from './businessApi/userApi'
 import { registerLocalAccountApiIpcHandlers } from './businessApi/localAccountApi'
-import { nettyClient } from './tcp-client/client'
+import { nettyClients } from './tcp-client/client'
 import { registerFriendApiIpcHandlers } from './businessApi/friendApi'
 import { registerChatApiIpcHandlers } from './businessApi/chatApi'
+import { registerFileManagerApiIpcHandlers } from './businessApi/fileManagerApi'
+
+// 捕获未处理的同步异常
+process.on('uncaughtException', (err) => {
+  console.error('[Main Process] 未捕获的同步异常:', err)
+  // 可选：弹窗提示、记录日志、优雅重启等
+  // dialog.showErrorBox('应用错误', `发生未处理异常: ${err.message}`);
+})
 
 // ------------------------------
 // 1. IPC 处理器函数（按功能模块化）
@@ -26,6 +34,7 @@ function registerAllIpcHandlers(): void {
   registerUserApiIpcHandlers()
   registerFriendApiIpcHandlers()
   registerChatApiIpcHandlers()
+  registerFileManagerApiIpcHandlers()
   // 未来新增的 IPC 模块只需在这里添加函数调用
 }
 
@@ -84,6 +93,7 @@ function createRegisterWindow(): void {
     resizable: false,
     titleBarStyle: 'hiddenInset',
     show: true,
+    alwaysOnTop: true,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -160,6 +170,7 @@ function createAddFriendWindow(): void {
     titleBarStyle: 'default', // 使用系统默认标题栏
     frame: true, // 显示窗口框架
     show: false,
+    alwaysOnTop: true,
     autoHideMenuBar: true,
     minimizable: false, // 禁止最小化
     maximizable: false, // 允许最大化
@@ -181,7 +192,7 @@ function createAddFriendWindow(): void {
     const devUrl = new URL(process.env['ELECTRON_RENDERER_URL'])
     devUrl.pathname = '/addFriend'
     addFriendWindow.loadURL(devUrl.toString())
-    addFriendWindow.webContents.openDevTools()
+    // addFriendWindow.webContents.openDevTools()
   } else {
     addFriendWindow.loadFile(path.join(__dirname, '../renderer/addFriend.html'))
   }
@@ -199,6 +210,7 @@ function createAddSessionWindow(): void {
     titleBarStyle: 'default', // 使用系统默认标题栏
     frame: true, // 显示窗口框架
     show: false,
+    alwaysOnTop: true,
     autoHideMenuBar: true,
     minimizable: false, // 禁止最小化
     maximizable: false, // 允许最大化
@@ -220,7 +232,7 @@ function createAddSessionWindow(): void {
     const devUrl = new URL(process.env['ELECTRON_RENDERER_URL'])
     devUrl.pathname = '/addSession'
     addSessionWindow.loadURL(devUrl.toString())
-    addSessionWindow.webContents.openDevTools()
+    // addSessionWindow.webContents.openDevTools()
   } else {
     addSessionWindow.loadFile(path.join(__dirname, '../renderer/addSession.html'))
   }
@@ -251,7 +263,9 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('openMainWindow', async () => {
-    nettyClient.connect()
+    for (const nettyClient of nettyClients) {
+      nettyClient.connect()
+    }
     createMainWindow()
   })
 

@@ -1,0 +1,136 @@
+.file-box-wrapper {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 确保容器占满父元素高度（可根据实际需求调整） */
+  width: 100%;
+}
+
+.file-box-header {
+  padding: 16px;
+  border-bottom: 1px solid #333;
+}
+
+.search-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #888;
+  font-size: 18px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 10px 10px 40px;
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #666;
+  box-shadow: 0 0 0 2px rgba(80, 80, 80, 0.5);
+}
+
+.search-input::placeholder {
+  color: #888;
+}
+
+.file-box-nav {
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+  background-color: #222;
+}
+
+.file-classes ol {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+}
+
+.file-classes li {
+  padding: 6px 16px;
+  border-radius: 16px;
+  background-color: #333;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.file-classes li:hover {
+  background-color: #444;
+  color: #e0e0e0;
+}
+
+.file-classes li.active {
+  background-color: #555;
+  color: #fff;
+  font-weight: 500;
+}
+
+.file-box-body {
+  padding: 16px;
+  /* 移除 min-height: 200px，改用 flex-grow */
+  flex-grow: 1; /* 占据剩余所有空间 */
+  overflow: auto; /* 内容超出时显示滚动条 */
+}
+
+.loading, .error, .empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #aaa;
+  text-align: center;
+}
+
+.error {
+  flex-direction: column;
+  gap: 16px;
+}
+
+.error button {
+  padding: 8px 16px;
+  background-color: #444;
+  border: none;
+  border-radius: 4px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.error button:hover {
+  background-color: #555;
+}
+
+.file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-list-item {
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.file-list-item:hover {
+  background-color: #2d2d2d;
+}

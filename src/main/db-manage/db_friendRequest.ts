@@ -1,5 +1,5 @@
 import { Database } from 'sqlite'
-import { getDb } from './database'
+import { dbManager } from './database'
 import { FriendRequest } from '@shared/types'
 
 /** 数据库表行数据结构（与SQL表字段完全对应） */
@@ -16,20 +16,16 @@ interface FriendRequestRow {
 }
 
 class FriendRequestDB {
-  private dbPromise: Promise<Database>
-
-  constructor() {
-    this.dbPromise = getDb()
-  }
-
-  /** 确保数据库连接有效 */
+  /**
+   * 确保数据库连接可用
+   */
   private async ensureDb(): Promise<Database> {
     try {
-      const db = await this.dbPromise
+      const db = await dbManager.getPrivateDb()
       if (!db) throw new Error('数据库连接失败')
       return db
     } catch (error) {
-      console.error('好友申请表数据库连接异常:', error)
+      console.error('数据库连接异常:', error)
       throw error
     }
   }

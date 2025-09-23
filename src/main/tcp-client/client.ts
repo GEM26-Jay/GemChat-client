@@ -2,7 +2,7 @@ import * as net from 'net'
 import { EventEmitter } from 'events'
 import Protocol, { debugProtocal } from './protocol'
 import { LengthFieldBasedFrameDecoder } from './frameDecoder'
-import { registerClientHandler } from './handler'
+import { getNettyServerAddress } from '../axios/axiosNettyApi'
 
 interface ProtocolTcpClientConfig {
   host: string
@@ -82,18 +82,20 @@ export class ProtocolTcpClient extends EventEmitter {
     try {
       console.log(`[TCP Client]: 接收消息`)
       // debugBuffer(data)
-      const frame = this.frameDecoder.decode(data)
-      if (!frame) return
-      const protocol = Protocol.fromBuffer(frame)
-      debugProtocal(protocol)
-      if (protocol.hasType(Protocol.SYSTEM_PUSH)) {
-        this.emit('system-push', protocol)
-      } else if (protocol.hasType(Protocol.SYNC)) {
-        this.emit('sync', protocol)
-      } else if (protocol.hasType(Protocol.AUTH)) {
-        this.emit('auth', protocol)
-      } else {
-        this.emit('message', protocol)
+      let frame = this.frameDecoder.decode(data)
+      while (frame) {
+        const protocol = Protocol.fromBuffer(frame)
+        debugProtocal(protocol)
+        if (protocol.getCommandType() === Protocol.ORDER_SYSTEM_PUSH) {
+          this.emit('system-push', protocol)
+        } else if (protocol.getCommandType() === Protocol.ORDER_SYNC) {
+          this.emit('sync', protocol)
+        } else if (protocol.getCommandType() === Protocol.ORDER_AUTH) {
+          this.emit('auth', protocol)
+        } else if (protocol.getCommandType() === Protocol.ORDER_MESSAGE) {
+          this.emit('message', protocol)
+        }
+        frame = this.frameDecoder.decode(Buffer.alloc(0))
       }
     } catch (error) {
       this.emit('error', error instanceof Error ? error : new Error(String(error)))
@@ -123,8 +125,10 @@ export class ProtocolTcpClient extends EventEmitter {
       clearTimeout(connectTimeout)
       this.connected = true
       this.emit('connected')
-      this.startHeartbeat()
+      // this.startHeartbeat()
     })
+
+    this.client.setKeepAlive(true, 5000)
 
     this.client.on('data', (data: Buffer) => {
       this.handleReceivedData(data)
@@ -132,14 +136,20 @@ export class ProtocolTcpClient extends EventEmitter {
 
     this.client.on('close', (hadError: boolean) => {
       clearTimeout(connectTimeout)
-      this.stopHeartbeat()
+      // this.stopHeartbeat()
       this.connected = false
       this.emit('disconnected', hadError)
-      this.scheduleReconnect()
+      // this.scheduleReconnect()
+      this.disconnect()
+      handleCloseOrError()
+      console.log('[nettyClient] close')
     })
 
     this.client.on('error', (err: Error) => {
       this.emit('error', err)
+      this.disconnect()
+      handleCloseOrError()
+      console.log('[nettyClient] error')
     })
   }
 
@@ -168,7 +178,7 @@ export class ProtocolTcpClient extends EventEmitter {
       this.reconnectTimer = null
     }
 
-    this.stopHeartbeat()
+    // this.stopHeartbeat()
 
     if (this.client) {
       this.client.destroy()
@@ -180,12 +190,12 @@ export class ProtocolTcpClient extends EventEmitter {
   }
 
   private startHeartbeat(): void {
-    this.stopHeartbeat()
+    // this.stopHeartbeat()
 
     this.heartbeatTimer = setInterval(() => {
       if (this.connected && this.client) {
         const heartbeat = new Protocol()
-        heartbeat.setType(Protocol.HEART_BEAT)
+        heartbeat.setType(Protocol.ORDER_HEART_BEAT)
         heartbeat.setFromId(0n)
         heartbeat.setToId(0n)
         heartbeat.setTimeStamp(BigInt(Date.now()))
@@ -215,12 +225,57 @@ export class ProtocolTcpClient extends EventEmitter {
   }
 }
 
-export const nettyClient = new ProtocolTcpClient({
-  host: '127.0.0.1',
-  port: 9200,
-  reconnectDelay: 30000,
-  heartbeatInterval: 150000,
-  connectTimeout: 10000
-})
+export const nettyClients = [] as ProtocolTcpClient[]
 
-registerClientHandler()
+export const initNettyClient = async (): Promise<ProtocolTcpClient | null> => {
+  try {
+    const addrApi = await getNettyServerAddress()
+    if (addrApi.isSuccess && addrApi.data) {
+      const addr = addrApi.data
+      console.log('Netty服务器地址:', addr)
+
+      // 分割地址和端口
+      const [host, portStr] = addr.split(':')
+
+      // 验证地址格式
+      if (!host || !portStr) {
+        throw new Error('Netty地址格式异常，应为host:port形式')
+      }
+
+      // 转换端口为数字并验证
+      const port = Number(portStr)
+      if (isNaN(port) || port < 1 || port > 65535) {
+        throw new Error(`无效的端口号: ${portStr}`)
+      }
+
+      const client = new ProtocolTcpClient({
+        host,
+        port,
+        reconnectDelay: 30000,
+        heartbeatInterval: 150000,
+        connectTimeout: 10000
+      })
+
+      nettyClients.push(client)
+      console.log('Netty客户端初始化成功')
+      // 创建客户端实例
+      return client
+    } else {
+      console.log('未能获取有效的Netty服务器地址')
+    }
+    return null
+  } catch (error) {
+    console.error(`初始化Netty客户端失败: ${error}`)
+    throw error // 可以根据需要决定是否向上抛出错误
+  }
+}
+
+const handleCloseOrError = (): void => {
+  initNettyClient().then((result) => {
+    if (result !== null) {
+      nettyClients[0] = result
+    } else {
+      nettyClients.length = 0
+    }
+  })
+}

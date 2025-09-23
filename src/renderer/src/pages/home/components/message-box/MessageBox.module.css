@@ -9,6 +9,11 @@
   flex-direction: column;
   gap: 16px; /* 消息项之间的间距 */
   overflow-y: auto;
+  /* 1. Firefox 基础优化：细滚动条 + 配色 */
+  scrollbar-width: thin; /* 窄滚动条 */
+  scrollbar-color: #ccc #f8f8f8; /* 滑块色 + 轨道色 */
+  /* 2. 平滑滚动（可选，提升体验） */
+  scroll-behavior: smooth;
 }
 
 /* 我的消息 - 靠右对齐 */

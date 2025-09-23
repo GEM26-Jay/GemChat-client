@@ -2,12 +2,21 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import { resolve } from 'path'
 import react from '@vitejs/plugin-react'
 
+// 提取别名配置为共享变量
+const alias = {
+  '@renderer': resolve('src/renderer/src'),
+  '@shared': resolve('src/shared'),
+  '@main': resolve('src/main')
+}
+
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    resolve: { alias } // 主进程添加别名
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    resolve: { alias } // 预加载脚本也添加别名
   },
   renderer: {
     // 设置根目录为 renderer/
@@ -29,13 +38,7 @@ export default defineConfig({
         }
       }
     },
-    resolve: {
-      alias: {
-        '@renderer': resolve('src/renderer/src'),
-        '@shared': resolve('src/shared'),
-        '@main': resolve('src/main')
-      }
-    },
+    resolve: { alias },
     server: {
       port: 5173,
       fs: {

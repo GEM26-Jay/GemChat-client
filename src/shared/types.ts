@@ -1,38 +1,4 @@
-/** MIME类型枚举 */
-export type MIME =
-  // 图片
-  | 'image/jpeg'
-  | 'image/png'
-  | 'image/gif'
-  | 'image/bmp'
-  | 'image/webp'
-  | 'image/svg+xml'
-  // 文档
-  | 'text/plain'
-  | 'text/html'
-  | 'text/css'
-  | 'text/javascript'
-  | 'application/json'
-  | 'application/pdf'
-  | 'application/msword'
-  | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  | 'application/vnd.ms-excel'
-  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  | 'application/vnd.ms-powerpoint'
-  | 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-  // 压缩文件
-  | 'application/zip'
-  | 'application/gzip'
-  | 'application/x-tar'
-  | 'application/x-7z-compressed'
-  // 其他
-  | 'application/octet-stream'
-  | 'audio/mpeg'
-  | 'video/mp4'
-  | 'video/mpeg'
-  | 'font/ttf'
-  | 'font/woff'
-  | 'font/woff2'
+import { MIME } from './utils'
 
 /** 统一API返回格式 */
 export interface ApiResult<T = void> {
@@ -40,6 +6,27 @@ export interface ApiResult<T = void> {
   data?: T
   msg?: string
   errType?: 'business' | 'http'
+}
+
+// 消息类型枚举（保持与后端对齐）
+export enum MessageType {
+  TYPE_TEXT = 1,
+  TYPE_IMAGE = 2,
+  TYPE_FILE = 3,
+  TYPE_VOICE = 4,
+  TYPE_VIDEO = 5,
+  TYPE_LOCATION = 6,
+  TYPE_CUSTOM = 99
+}
+
+// 消息类型枚举（保持与后端对齐）
+export enum MessageStatus {
+  TYPE_SENDING = 1,
+  TYPE_FAILED = 2,
+  TYPE_SUCCESS = 3,
+  TYPE_DRAWBACK = 4,
+  TYPE_DELETED = 5,
+  TYPE_READ = 6
 }
 
 /** 用户资料类型（对应user_profile表） */
@@ -81,12 +68,27 @@ export interface LoginFormData {
 }
 
 /** OSS临时授权Token类型 */
-export interface StsToken {
+export interface FileToken {
+  exist: boolean
+  // 文件信息
+  name: string // 文件名称
+  path: string // 桶内路径
+  size: number // 文件大小
+  // OSS 信息
+  region: string
+  bucket: string
+  // OSS 密钥
   accessKeyId: string
   accessKeySecret: string
   securityToken: string
   expiration: string
-  returnPath: string
+  // 完整HTTP访问路径
+  httpAccessPath: string
+}
+
+// MIME类型与目标内容格式的映射表（key：MIME类型/通配符，value：对应内容格式）
+export type MimeContentTypeMap = {
+  [key in MIME | `${string}/*`]?: null | 'Base64' | 'Text' | 'ArrayBuffer'
 }
 
 /** 通用文件类型 */
@@ -94,10 +96,11 @@ export interface UniversalFile {
   fileId?: string // 文件唯一标识
   fileName: string // 文件名（含扩展名）
   mimeType: MIME // 文件MIME类型
-  fileSize?: number // 文件大小（字节）
-  content?: string | Buffer // 文件内容
-  contentType?: null | 'Base64' | 'Text' | 'Buffer' // 内容格式
+  fileSize: number // 文件大小（字节）
+  contentType: null | 'Base64' | 'Text' | 'ArrayBuffer' // 内容格式
+  content?: string | ArrayBuffer // 文件内容
   localPath?: string // 本地文件路径
+  fingerprint?: string // 文件指纹
 }
 
 /** 群聊信息类型（对应group表） */
@@ -161,12 +164,12 @@ export interface ChatSession {
   type: number // 聊天类型 1-单聊，2-群聊
   firstId: string | null // 如果是单聊，则为第二个用户的ID，如果是群聊，则为空
   secondId: string | null // 如果是单聊，则为第二个用户的ID，如果是群聊，则为空
-  lastMessageId: string | null // 最后一条消息ID
-  lastMessageContent: string | null // 最后一条消息内容摘要
-  lastMessageTime: number | null // 最后一条消息时间戳
   status: number // 1-正常
   createdAt: number // 创建时间戳
   updatedAt: number // 更新时间戳
+  lastMessageId: string | null // 最后一条消息ID
+  lastMessageContent: string | null // 最后一条消息内容摘要
+  lastMessageTime: number | null // 最后一条消息时间戳
 }
 
 /**
@@ -184,4 +187,23 @@ export interface ChatMessage {
   replyToId?: string | null // 引用消息ID（回复功能）
   createdAt: number // 发送时间戳
   updatedAt: number // 更新时间戳
+}
+
+/**
+ * 文件映射业务对象类型
+ */
+export interface FileMap {
+  id?: number
+  originName: string
+  remoteName: string
+  fingerprint: string
+  size: number
+  mimeType: string
+  location: string
+  status: number // 0:未下载, 1: 已下载
+  createdAt: number
+  updatedAt: number
+  sessionId: string
+  messageId: string
+  sourceInfo: string
 }

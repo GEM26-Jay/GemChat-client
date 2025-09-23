@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS local_account (
     account TEXT PRIMARY KEY NOT NULL, -- 登录账户（用户名/手机号）
     password TEXT NOT NULL, -- 加密存储的密码
-    avatar_url TEXT NOT NULL DEFAULT 'default_avatar.png', -- 头像URL，默认使用系统头像
+    avatar TEXT NOT NULL DEFAULT 'default_avatar.png', -- 头像URL，默认使用系统头像
     is_agree INTEGER -- 是否同意服务协议（0-未同意，1-已同意）
 );
 
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
     username TEXT NOT NULL, -- 用户名
     masked_email TEXT, -- 脱敏邮箱（如：xxx@xx.com）
     masked_phone TEXT, -- 脱敏手机号（如：138****5678）
-    avatar_url TEXT DEFAULT 'default_avatar.png', -- 头像URL
+    avatar TEXT DEFAULT 'default_avatar.png', -- 头像URL
     signature TEXT, -- 个性签名
     gender TEXT NOT NULL DEFAULT '0', -- 性别（0-未知，1-男，2-女）
     birthdate TEXT, -- 出生日期（格式：yyyy-MM-dd）
@@ -79,9 +79,6 @@ CREATE TABLE IF NOT EXISTS chat_session (
     type INTEGER NOT NULL DEFAULT 1,
     first_id TEXT NOT NULL,
     second_id TEXT,
-    last_message_id TEXT,
-    last_message_content TEXT,
-    last_message_time INTEGER,
     status INTEGER NOT NULL DEFAULT 1,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -89,7 +86,7 @@ CREATE TABLE IF NOT EXISTS chat_session (
 
 -- 聊天消息表
 CREATE TABLE IF NOT EXISTS chat_message (
-    id INTEGER NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT NOT NULL,
     message_id TEXT NOT NULL,
     type INTEGER NOT NULL,
@@ -100,4 +97,21 @@ CREATE TABLE IF NOT EXISTS chat_message (
     reply_to_id TEXT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
+);
+
+-- 文件映射表
+CREATE TABLE IF NOT EXISTS file_map (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    origin_name TEXT NOT NULL,
+    remote_name TEXT NOT NULL,
+    fingerprint TEXT NOT NULL,
+    size        TEXT NOT NULL,
+    mime_type   TEXT NOT NULL,
+    location    TEXT NOT NULL,
+    status      INTEGER DEFAULT 1 NOT NULL,
+    created_at  INTEGER NOT NULL,
+    updated_at  INTEGER NOT NULL,
+    session_id  TEXT NOT NULL,
+    message_id  TEXT NOT NULL,
+    source_info TEXT NOT NULL
 );

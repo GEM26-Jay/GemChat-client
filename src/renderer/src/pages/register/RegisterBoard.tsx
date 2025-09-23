@@ -8,15 +8,15 @@ import { FaCloudUploadAlt } from 'react-icons/fa'
 const RegisterPage: React.FC = () => {
   // 表单状态管理
   const [formData, setFormData] = useState<RegisterData>({
-    username: 'test',
+    username: 'admin',
     avatar: '',
     password: '123456',
     confirmPassword: '123456',
     email: '',
-    phone: '15079660000',
-    signature: '测试',
-    gender: '0',
-    birthdate: '2001-01-01'
+    phone: '15079663117',
+    signature: '管理员',
+    gender: '1',
+    birthdate: '2001-05-26'
   })
 
   const [avatar, setAvatar] = useState<UniversalFile | null>()
@@ -90,6 +90,7 @@ const RegisterPage: React.FC = () => {
       let data = {
         ...formData
       }
+      // todo: 存在风险
       if (avatar) {
         const uploadResult = await window.fileManager.uploadAvatar(avatar)
         if (uploadResult.isSuccess && uploadResult.data) {
@@ -134,7 +135,9 @@ const RegisterPage: React.FC = () => {
 
   // 处理头像上传
   const handleSetAvatar = async (): Promise<void> => {
-    const result: ApiResult<UniversalFile[]> = await window.fileManager.openFileDialog('Base64')
+    const result: ApiResult<UniversalFile[]> = await window.fileManager.openFileDialog({
+      'image/*': 'Base64'
+    })
     if (result.isSuccess && result.data) {
       const dataList: UniversalFile[] = result.data
       if (dataList.length > 1) {
@@ -173,7 +176,7 @@ const RegisterPage: React.FC = () => {
             </div>
           )}
         </div>
-        <h1 className={styles.title}>创建账号</h1>
+        <h1 className={styles.title}>注册账号</h1>
         <p className={styles.subtitle}>填写以下信息完成注册</p>
       </div>
 

@@ -4,26 +4,30 @@ import { Buffer } from 'buffer'
  * Custom protocol class for network communication data encapsulation and parsing
  */
 export default class Protocol {
-  // Command type constants (high 16 bits: system commands)
-  public static readonly SYSTEM_PUSH = 1 << 16 // System push command
-  public static readonly AUTH = 2 << 16 // Authentication command
-  public static readonly SYNC = 3 << 16 // Sync command
-  public static readonly HEART_BEAT = 4 << 16 // HEART BEAT
+  // 命令类型常量（高16位）
+  public static readonly ORDER_SYSTEM_PUSH = 1 << 16 // 系统推送
+  public static readonly ORDER_AUTH = 2 << 16 // 认证
+  public static readonly ORDER_SYNC = 3 << 16 // 同步信号
+  public static readonly ORDER_HEART_BEAT = 4 << 16 // 心跳
+  public static readonly ORDER_MESSAGE = 5 << 16 // 消息转发
 
-  // Target type constants (middle 8 bits: receiver type)
-  public static readonly TO_USER = 1 << 8 // Single chat (0x00000100)
-  public static readonly TO_GROUP = 2 << 8 // Group chat (0x00000200)
+  // 内容类型（低16位）
+  public static readonly CONTENT_FAILED_INFO = -1 // 发送失败响应
+  public static readonly CONTENT_TEXT = 1 // 文本消息
+  public static readonly CONTENT_IMAGE = 2 // 图片消息
+  public static readonly CONTENT_FILE = 3 // 文件消息
+  public static readonly CONTENT_VOICE = 4 // 语音消息
+  public static readonly CONTENT_VIDEO = 5 // 视频消息
+  public static readonly CONTENT_LOCATION = 6 // 位置消息
+  public static readonly CONTENT_ACK = 99 // 消息响应
 
-  // Content type constants (low 8 bits: message type)
-  public static readonly MESSAGE = 1 // Text message (0x00000001)
-  public static readonly FILE = 2 // File message (0x00000002)
 
   // Protocol magic number (2 bytes, for packet validation)
   public static readonly MAGIC_NUMBER = 0xbabe
 
   // Protocol version (2 bytes), default 1
   private version: number = 1
-  // Message command type (high 16 + middle 8 + low 8 bits, 4 bytes)
+  // Message command type (高16位命令类型 + 低16位内容类型, 4 bytes)
   private type: number = 0
   // Sender ID (8 bytes)
   private fromId: bigint = 0n
@@ -84,6 +88,28 @@ export default class Protocol {
   }
   public setType(type: number): void {
     this.type = type
+  }
+
+  /**
+   * 设置完整类型（命令类型 + 内容类型）
+   */
+  public setFullType(commandType: number, contentType: number): void {
+    // 确保命令类型只占用高16位，内容类型占用低16位
+    this.type = (commandType & 0xffff0000) | (contentType & 0x0000ffff)
+  }
+
+  /**
+   * 获取命令类型（高16位）
+   */
+  public getCommandType(): number {
+    return this.type & 0xffff0000
+  }
+
+  /**
+   * 获取内容类型（低16位）
+   */
+  public getContentType(): number {
+    return this.type & 0x0000ffff
   }
 
   public getFromId(): bigint {
@@ -194,40 +220,6 @@ export default class Protocol {
 
     return protocol
   }
-
-  /**
-   * Check if current type contains target flag
-   * @param target Flag to check (e.g., SYSTEM_PUSH, TO_USER, etc.)
-   * @returns true if contains target flag, otherwise false
-   */
-  public hasType(target: number): boolean {
-    // 将32位type和target分解为4个8位段
-    const typeSegments = [
-      (this.type >>> 24) & 0xff, // 最高8位（系统命令段）
-      (this.type >>> 16) & 0xff, // 次高8位（保留段）
-      (this.type >>> 8) & 0xff, // 中间8位（目标类型段）
-      this.type & 0xff // 最低8位（内容类型段）
-    ]
-
-    const targetSegments = [
-      (target >>> 24) & 0xff,
-      (target >>> 16) & 0xff,
-      (target >>> 8) & 0xff,
-      target & 0xff
-    ]
-
-    // 逐段验证
-    for (let i = 0; i < 4; i++) {
-      if (targetSegments[i] !== 0) {
-        // 如果target段非0
-        if (typeSegments[i] !== targetSegments[i]) {
-          return false
-        }
-      }
-    }
-
-    return true
-  }
 }
 
 export const debugProtocal = (protocol: Protocol): void => {
@@ -237,57 +229,52 @@ export const debugProtocal = (protocol: Protocol): void => {
   console.log(`Magic Number: 0x${Protocol.MAGIC_NUMBER.toString(16)}`)
   console.log(`Version: ${protocol.getVersion()}`)
 
-  // 解析命令类型
-  const type = protocol.getType()
-  const systemCmd = type & 0xffff0000
-  const targetType = type & 0x0000ff00
-  const contentType = type & 0x000000ff
+  // 解析命令类型和内容类型
+  const commandType = protocol.getCommandType()
+  const contentType = protocol.getContentType()
 
   let systemCmdStr = ''
-  switch (systemCmd) {
-    case Protocol.SYSTEM_PUSH:
+  switch (commandType) {
+    case Protocol.ORDER_SYSTEM_PUSH:
       systemCmdStr = 'SYSTEM_PUSH'
       break
-    case Protocol.AUTH:
+    case Protocol.ORDER_AUTH:
       systemCmdStr = 'AUTH'
       break
-    case Protocol.SYNC:
+    case Protocol.ORDER_SYNC:
       systemCmdStr = 'SYNC'
       break
-    case Protocol.HEART_BEAT:
+    case Protocol.ORDER_HEART_BEAT:
       systemCmdStr = 'HEART_BEAT'
       break
-    default:
-      systemCmdStr = `UNKNOWN(0x${systemCmd.toString(16)})`
-  }
-
-  let targetTypeStr = ''
-  switch (targetType) {
-    case Protocol.TO_USER:
-      targetTypeStr = 'TO_USER'
-      break
-    case Protocol.TO_GROUP:
-      targetTypeStr = 'TO_GROUP'
+    case Protocol.ORDER_MESSAGE:
+      systemCmdStr = 'MESSAGE'
       break
     default:
-      targetTypeStr = `UNKNOWN(0x${targetType.toString(16)})`
+      systemCmdStr = `UNKNOWN(0x${commandType.toString(16)})`
   }
 
   let contentTypeStr = ''
   switch (contentType) {
-    case Protocol.MESSAGE:
-      contentTypeStr = 'MESSAGE'
+    case Protocol.CONTENT_FAILED_INFO:
+      contentTypeStr = 'FAILED_INFO'
       break
-    case Protocol.FILE:
+    case Protocol.CONTENT_TEXT:
+      contentTypeStr = 'TEXT'
+      break
+    case Protocol.CONTENT_FILE:
       contentTypeStr = 'FILE'
+      break
+    case Protocol.CONTENT_ACK:
+      contentTypeStr = 'ACK'
       break
     default:
       contentTypeStr = `UNKNOWN(0x${contentType.toString(16)})`
   }
 
-  console.log(
-    `Type: 0x${type.toString(16)} (${systemCmdStr} | ${targetTypeStr} | ${contentTypeStr})`
-  )
+  console.log(`Type: 0x${protocol.getType().toString(16)}`)
+  console.log(`  Command Type: 0x${commandType.toString(16)} (${systemCmdStr})`)
+  console.log(`  Content Type: 0x${contentType.toString(16)} (${contentTypeStr})`)
 
   // ID 和时间戳（使用字符串形式显示大整数）
   console.log(`From ID: ${protocol.getFromId().toString()}`)
@@ -297,7 +284,7 @@ export const debugProtocal = (protocol: Protocol): void => {
   // 消息内容
   console.log(`Message Length: ${protocol.getLength()}`)
   console.log(`Message Content (string): "${protocol.getMessageString()}"`)
-  console.log(`Message Content (hex): 0x${protocol.getMessageBuffer().toString('hex')}`)
+  // console.log(`Message Content (hex): 0x${protocol.getMessageBuffer().toString('hex')}`)
 
   console.log('==========================')
 }

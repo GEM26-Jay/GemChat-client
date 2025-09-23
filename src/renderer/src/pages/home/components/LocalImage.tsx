@@ -7,10 +7,11 @@ export interface LocalImageProps {
   fileName?: string
   className?: string
   alt?: string
+  option?: 'avatar' | 'image'
 }
 
 // 获取图片数据的主函数 - 直接调用时确保返回Base64
-const fetchImageData = async (fileName: string): Promise<UniversalFile> => {
+const fetchAvatarData = async (fileName: string): Promise<UniversalFile> => {
   if (!fileName) throw new Error('文件名为空')
 
   // 直接调用接口，确保返回Base64格式
@@ -23,18 +24,39 @@ const fetchImageData = async (fileName: string): Promise<UniversalFile> => {
   throw new Error(`本地文件获取失败: ${fileName}`)
 }
 
+// 获取图片数据的主函数 - 直接调用时确保返回Base64
+const fetchImageData = async (fileName: string): Promise<UniversalFile> => {
+  if (!fileName) throw new Error('文件名为空')
+
+  // 直接调用接口，确保返回Base64格式
+  const result: ApiResult<UniversalFile> = await window.fileManager.getUserFile(fileName, 'Base64')
+
+  if (result.isSuccess && result.data) {
+    return result.data
+  }
+
+  throw new Error(`本地文件获取失败: ${fileName}`)
+}
+
 const LocalImage: React.FC<LocalImageProps> = ({
   fileName = '',
   className = '',
-  alt = 'local image'
+  alt = 'local image',
+  option = 'avatar'
 }: LocalImageProps) => {
   const [src, setSrc] = useState<string>(electronSVG)
   const queryClient = useQueryClient()
 
   // 使用React Query管理请求和缓存
   const { data, isLoading, isError, refetch } = useQuery<UniversalFile>({
-    queryKey: ['file', fileName],
-    queryFn: () => fetchImageData(fileName),
+    queryKey: ['file', option, fileName],
+    queryFn: () => {
+      if (option === 'avatar') {
+        return fetchAvatarData(fileName)
+      } else {
+        return fetchImageData(fileName)
+      }
+    },
     enabled: !!fileName
   })
 
@@ -45,7 +67,7 @@ const LocalImage: React.FC<LocalImageProps> = ({
         console.log(`Cache for ${fileName} is not valid Base64, refreshing...`)
 
         // 直接调用原始接口获取Base64数据
-        fetchImageData(fileName).then((freshData) => {
+        fetchAvatarData(fileName).then((freshData) => {
           if (
             freshData &&
             freshData.contentType === 'Base64' &&

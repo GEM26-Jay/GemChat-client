@@ -1,11 +1,19 @@
 import { clientDataStore } from '../clientDataStore'
 import { chatSessionDB } from '../db-manage/db_chatSession'
-import { ApiResult, ChatMessage, ChatSession, ChatGroup, GroupMember, User } from '@shared/types'
+import {
+  ApiResult,
+  ChatMessage,
+  ChatSession,
+  ChatGroup,
+  GroupMember,
+  User,
+  MessageStatus
+} from '@shared/types'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { groupDB } from '../db-manage/db_group'
 import { CreateGroupDTO } from '@shared/DTO.types'
 import { postGroupAdd } from '../axios/axiosChatApi'
-import { nettyClient } from '../tcp-client/client'
+import { nettyClients } from '../tcp-client/client'
 import Protocol from '../tcp-client/protocol'
 
 export function registerChatApiIpcHandlers(): void {
@@ -204,22 +212,47 @@ export function registerChatApiIpcHandlers(): void {
     async (
       _event: IpcMainInvokeEvent,
       sessionId: string,
-      content: string
-    ): Promise<ApiResult<void>> => {
+      type: number,
+      content: string,
+      timeStamp?: number
+    ): Promise<ApiResult<ChatMessage>> => {
+      const user = clientDataStore.get('user') as User
+      const time = timeStamp ? timeStamp : Date.now()
+      const tempMessage: ChatMessage = {
+        id: 0,
+        sessionId,
+        messageId: `temp-${time}`, // 临时ID，确保唯一性
+        type: type,
+        fromId: user.id,
+        toId: sessionId,
+        content,
+        status: MessageStatus.TYPE_SENDING,
+        createdAt: time,
+        updatedAt: time
+      }
       try {
         const protocol = new Protocol()
-        const user = clientDataStore.get('user') as User
         protocol.setFromId(BigInt(user.id))
+        protocol.setType(Protocol.ORDER_MESSAGE + type)
         protocol.setMessage(content)
         protocol.setToId(BigInt(sessionId))
         protocol.setVersion(1)
-        protocol.setTimeStamp(BigInt(Date.now()))
-        nettyClient.sendProtocol(protocol)
-        return {
-          isSuccess: true
+
+        protocol.setTimeStamp(BigInt(time))
+        const success = nettyClients[0].sendProtocol(protocol)
+        if (success) {
+          return {
+            isSuccess: true,
+            data: tempMessage
+          }
+        } else {
+          return {
+            isSuccess: false
+          }
         }
       } catch (err) {
-        return { isSuccess: false, msg: `[IPC: chat-sendMessage]: ${err}` }
+        tempMessage['status'] = MessageStatus.TYPE_FAILED
+        return { isSuccess: false, msg: `[IPC: chat-sendMessage]: ${err}`, data: tempMessage }
       }
     }
   )

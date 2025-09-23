@@ -85,8 +85,8 @@ const LoginBoard: React.FC = () => {
               password: ''
             }
           }
-          window.utilApi.log2main(`用户记住账号：${JSON.stringify(data)}`)
-          window.businessApi.localAccount.addOrUpdata(data)
+          await window.utilApi.log2main(`用户记住账号：${JSON.stringify(data)}`)
+          await window.businessApi.localAccount.addOrUpdata(data)
         }
         window.windowsApi.openMainWindow()
         window.windowsApi.closeLoginWindow()

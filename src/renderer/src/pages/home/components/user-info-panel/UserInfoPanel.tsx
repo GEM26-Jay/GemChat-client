@@ -136,9 +136,13 @@ const UserInfoPanel: React.FC = () => {
   }
 
   // 处理发消息跳转
-  const handleSendMessage = (): void => {
+  const handleSendMessage = async (): Promise<void> => {
     if (user) {
-      navigate(`/chat/${user.id}`)
+      const cUser = (await window.clientData.get('user')) as User
+      const sessionApi = await window.businessApi.chat.getSingleSessionByUserIds(user.id, cUser.id)
+      if (sessionApi.isSuccess && sessionApi.data) {
+        navigate(`/home/chat/${sessionApi.data.id}`)
+      }
     }
   }
 

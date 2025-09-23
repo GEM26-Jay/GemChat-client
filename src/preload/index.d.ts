@@ -16,6 +16,7 @@ declare global {
         selectById: (id: string) => Promise<ApiResult<User>>
         selectByIds: (ids: string[]) => Promise<ApiResult<User[]>>
         searchUserBlur: (text: string) => Promise<ApiResult<User[]>>
+        updateInfo: (user: User) => Promise<ApiResult<void>>
       }
       friend: {
         getValidFriends: () => Promise<ApiResult<UserFriend[]>>
@@ -53,6 +54,17 @@ declare global {
         getGroupSessionByGroupId: (groupId: string) => Promise<ApiResult<ChatSession>>
         createGroup: (dto: CreateGroupDTO) => Promise<ApiResult<Group>>
         onReceiveMessage: (callback) => void
+        sendMessage: (
+          sessionId: string,
+          type: number,
+          content: string,
+          timeStamp?: number
+        ) => Promise<ApiResult<ChatMessage>>
+      }
+      file: {
+        getAll: () => Promise<ApiResult<FileMap[]>>
+        getByCursor: (startId: number, size: number) => Promise<ApiResult<FileMap[]>>
+        add: (fileMap: FileMap) => Promise<ApiResult<void>>
       }
     }
     utilApi: {
@@ -70,24 +82,23 @@ declare global {
       onNavigateMainWindow: (callback) => void
     }
     clientData: {
-      get: (key: string) => unknown
-      set: (key: string, value: unknown) => boolean
+      get: (key: string) => Promise<unknown>
+      set: (key: string, value: unknown) => Promise<boolean>
       onUpdate: (callback: () => void) => void
     }
     fileManager: {
       getUserFile: (
         fileName: string,
-        contentType: null | 'Buffer' | 'Base64' | 'Text'
+        contentType: null | 'ArrayBuffer' | 'Base64' | 'Text'
       ) => Promise<ApiResult<UniversalFile>>
       getAvatar: (
         fileName: string,
-        contentType: null | 'Buffer' | 'Base64'
+        contentType: null | 'ArrayBuffer' | 'Base64'
       ) => Promise<ApiResult<UniversalFile>>
       uploadUserFile: (file: UniversalFile) => Promise<ApiResult<UniversalFile>>
       uploadAvatar: (file: UniversalFile) => Promise<ApiResult<UniversalFile>>
-      openFileDialog: (
-        contentType: null | 'Buffer' | 'Base64' | 'Text'
-      ) => Promise<ApiResult<UniversalFile[]>>
+      openFileDialog: (map: MimeContentTypeMap) => Promise<ApiResult<UniversalFile[]>>
+      openImageViewer: (path: string) => Promise<void>
     }
     update: {
       onUpdate: (callback) => void

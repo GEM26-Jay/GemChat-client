@@ -1,0 +1,131 @@
+/* 原有样式保持不变，补充以下暗黑风格样式 */
+.setting-panel-wrapper {
+  background-color: #121212;
+  color: #e0e0e0;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+.settings-header {
+  margin-bottom: 32px;
+}
+
+.settings-header h1 {
+  font-size: 28px;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+}
+
+.settings-header p {
+  font-size: 16px;
+  color: #9e9e9e;
+  margin: 0;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+  border-bottom: 1px solid #2d2d2d;
+  padding-bottom: 16px;
+}
+
+.section-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #9e9e9e;
+  margin: 0 0 16px 0;
+  padding-left: 16px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.setting-item:hover {
+  background-color: #1e1e1e;
+}
+
+.setting-icon {
+  width: 24px;
+  height: 24px;
+  color: #64b5f6;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.setting-info {
+  flex-grow: 1;
+}
+
+.setting-info h3 {
+  font-size: 16px;
+  margin: 0 0 4px 0;
+  color: #ffffff;
+}
+
+.setting-info p {
+  font-size: 14px;
+  margin: 0;
+  color: #9e9e9e;
+}
+
+.setting-arrow {
+  color: #616161;
+}
+
+.setting-toggle {
+  color: #64b5f6;
+}
+
+.setting-toggle-group {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #1e1e1e;
+  border: none;
+  color: #9e9e9e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-btn.active {
+  background-color: #64b5f6;
+  color: white;
+}
+
+.settings-footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid #2d2d2d;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #b71c1c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #c62828;
+}
