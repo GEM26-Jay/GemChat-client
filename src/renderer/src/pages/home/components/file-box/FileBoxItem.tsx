@@ -10,6 +10,7 @@ import {
   FaFileWord
 } from 'react-icons/fa6'
 import { formatDate, formatFileSize } from '@shared/utils'
+import LocalImage from '../LocalImage'
 
 // 根据MIME类型获取显示图标
 const getIconByMIME = (mimeType: string): React.ReactNode => {
@@ -37,11 +38,12 @@ const getIconByMIME = (mimeType: string): React.ReactNode => {
 }
 
 const FileBoxItem: React.FC<{ file: FileMap }> = ({ file }: { file: FileMap }) => {
+  console.log(file)
   return (
     <div className={styles['file-box-item-wrapper']}>
       <div className={styles['file-icon']}>
         {file.mimeType.startsWith('image/') ? (
-          <img src={file.location} alt={file.originName} className={styles['image-preview']} />
+          <LocalImage fileName={file.remoteName} option={'image'}  className={styles['image-preview']}></LocalImage>
         ) : (
           getIconByMIME(file.mimeType)
         )}
