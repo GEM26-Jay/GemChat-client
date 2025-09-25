@@ -31,13 +31,22 @@ A modern-style PC chat application client with an exquisite UI and elegant inter
 ## Project Setup
 The services in the client's main process (src/main/*) rely heavily on backend support: all backend interfaces for HTTP requests are located in the src/main/axios directory; data type definitions can be found in src/shared/types; the chat function is based on a custom lightweight messaging protocol (see src/main/tcp-client/protocol) and requires a TCP server; file sending and uploading use Alibaba Cloud OSS's "OSS Browser.js SDK" and require an STS server configuration.
 
-For the specific implementation of the backend server, please refer to:[GemChat-Server](https://github.com "GemChat-Server")
+For the specific implementation of the backend server, please refer to:[GemChat-Server](https://github.com/GEM26-Jay/GemChat-server "GemChat-Server")
 
 ---
 
 客户端主进程（src/main/*）中的服务高度依赖服务端支持：所有 HTTP 请求的后端接口集中在src/main/axios目录；数据类型定义位于src/shared/types；聊天功能基于自定义轻量级消息协议（详见src/main/tcp-client/protocol），需搭配 TCP 服务器使用；文件收发则依托阿里云 OSS 的 “OSS Browser.js SDK”，需提前配置 STS 服务器。
 
-具体服务端实现可见：[GemChat-Server](https://github.com "GemChat-Server")
+具体服务端实现可见：[GemChat-Server](https://github.com/GEM26-Jay/GemChat-server "GemChat-Server")
+
+---
+
+After installing the server, please configure the server address in "src/main/axios/axiosClient.ts".The TCP server can be customized by modifying the logic of initNettyClient in "src/main/tcp-client/client.ts".
+
+---
+
+服务器安装完成后，请在 “src/main/axios/axiosClient.ts” 中配置服务器地址。TCP 服务器可通过修改 “src/main/tcp-client/client.ts” 中 initNettyClient 的逻辑进行自定义设置。
+
 
 ### Install
 
