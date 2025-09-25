@@ -30,6 +30,7 @@ A modern-style PC chat application client with an exquisite UI and elegant inter
 
 ## Project Setup
 The services in the client's main process (src/main/*) rely heavily on backend support: all backend interfaces for HTTP requests are located in the src/main/axios directory; data type definitions can be found in src/shared/types; the chat function is based on a custom lightweight messaging protocol (see src/main/tcp-client/protocol) and requires a TCP server; file sending and uploading use Alibaba Cloud OSS's "OSS Browser.js SDK" and require an STS server configuration.
+
 For the specific implementation of the backend server, please refer to:[GemChat-Server](https://github.com "GemChat-Server")
 
 ---
