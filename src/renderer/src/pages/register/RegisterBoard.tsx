@@ -8,15 +8,15 @@ import { FaCloudUploadAlt } from 'react-icons/fa'
 const RegisterPage: React.FC = () => {
   // 表单状态管理
   const [formData, setFormData] = useState<RegisterData>({
-    username: 'admin',
+    username: '',
     avatar: '',
-    password: '123456',
-    confirmPassword: '123456',
+    password: '',
+    confirmPassword: '',
     email: '',
-    phone: '15079663117',
-    signature: '管理员',
-    gender: '1',
-    birthdate: '2001-05-26'
+    phone: '',
+    signature: '',
+    gender: '0',
+    birthdate: ''
   })
 
   const [avatar, setAvatar] = useState<UniversalFile | null>()
