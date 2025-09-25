@@ -153,7 +153,7 @@ function createMainWindow(): void {
     const devUrl = new URL(process.env['ELECTRON_RENDERER_URL'])
     devUrl.pathname = '/home'
     mainWindow.loadURL(devUrl.toString())
-    mainWindow.webContents.openDevTools()
+    // mainWindow.webContents.openDevTools()
   } else {
     // 生产环境加载
     mainWindow.loadFile(

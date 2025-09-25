@@ -39,7 +39,9 @@ const MessageBox: React.FC<MessageBoxProps> = ({ userId, sessionId, isGroup }: M
     if (messages.length === 0) {
       window.businessApi.chat.getMessagesBySessionId(sessionId, 1, 20).then((apiResult) => {
         const list: ChatMessage[] = apiResult.data
-          ? apiResult.data.sort((a, b) => a.createdAt - b.createdAt)
+          ? apiResult.data.sort((a, b) => {
+            return a.id - b.id
+          })
           : []
         queryClient.setQueryData(queryKey, list)
       })

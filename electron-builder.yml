@@ -1,5 +1,5 @@
 appId: com.zcj.app
-productName: ChatStore
+productName: GemChat
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: ChatStore
+  executableName: GemChat
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

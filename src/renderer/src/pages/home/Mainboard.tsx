@@ -9,11 +9,7 @@ import { ChatMessage } from '@shared/types'
 
 // 抽离排序函数，提升可读性
 const sortMessages = (a: ChatMessage, b: ChatMessage): number => {
-  // 优先按时间排序（升序：旧消息在前，新消息在后）
-  if (a.createdAt !== b.createdAt) {
-    return a.createdAt - b.createdAt
-  }
-  // 时间相同时，按messageId排序（保证顺序稳定）
+  // 按messageId排序（保证顺序稳定）
   return a.messageId.localeCompare(b.messageId)
 }
 
