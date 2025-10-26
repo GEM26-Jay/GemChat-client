@@ -62,7 +62,7 @@ export class ProtocolTcpClient extends EventEmitter {
   private heartbeatTimer: NodeJS.Timeout | null = null
 
   private frameDecoder = new LengthFieldBasedFrameDecoder({
-    lengthFieldOffset: 32,
+    lengthFieldOffset: 40,
     lengthFieldLength: 2,
     lengthAdjustment: 0,
     initialBytesToStrip: 0
@@ -84,7 +84,8 @@ export class ProtocolTcpClient extends EventEmitter {
       // debugBuffer(data)
       let frame = this.frameDecoder.decode(data)
       while (frame) {
-        const protocol = Protocol.fromBuffer(frame)
+        const protocol = 
+        Protocol.fromBuffer(frame)
         debugProtocal(protocol)
         if (protocol.getCommandType() === Protocol.ORDER_SYSTEM_PUSH) {
           this.emit('system-push', protocol)

@@ -33,6 +33,8 @@ export default class Protocol {
   private fromId: bigint = 0n
   // Receiver ID (8 bytes)
   private toId: bigint = 0n
+  // 唯一标识符
+  private identityId: bigint = 0n
   // Timestamp (8 bytes)
   private timeStamp: bigint = 0n
   // Message body length (2 bytes)
@@ -126,6 +128,13 @@ export default class Protocol {
     this.toId = toId
   }
 
+  public getIdentityId(): bigint {
+    return this.identityId
+  }
+  public setIdentityId(identityId: bigint): void {
+    this.identityId = identityId
+  }
+
   public getTimeStamp(): bigint {
     return this.timeStamp
   }
@@ -147,7 +156,7 @@ export default class Protocol {
     this.calculateLength()
 
     // Create a Buffer with exact size needed
-    const buffer = Buffer.alloc(2 + 2 + 4 + 8 + 8 + 8 + 2 + this.length)
+    const buffer = Buffer.alloc(2 + 2 + 4 + 8 + 8 + 8 + 8 + 2 + this.length)
 
     let offset = 0
 
@@ -161,6 +170,8 @@ export default class Protocol {
     buffer.writeBigUInt64BE(this.fromId, offset)
     offset += 8
     buffer.writeBigUInt64BE(this.toId, offset)
+    offset += 8
+    buffer.writeBigUInt64BE(this.identityId, offset)
     offset += 8
     buffer.writeBigUInt64BE(this.timeStamp, offset)
     offset += 8
@@ -199,6 +210,8 @@ export default class Protocol {
     protocol.setFromId(buffer.readBigUInt64BE(offset))
     offset += 8
     protocol.setToId(buffer.readBigUInt64BE(offset))
+    offset += 8
+    protocol.setIdentityId(buffer.readBigUInt64BE(offset))
     offset += 8
     protocol.setTimeStamp(buffer.readBigUInt64BE(offset))
     offset += 8

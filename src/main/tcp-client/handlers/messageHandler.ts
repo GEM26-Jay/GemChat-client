@@ -7,17 +7,13 @@ import { clientDataStore } from '@main/clientDataStore'
 import { getMIMEFromFilename } from '@shared/utils'
 
 export const handleMessageReceive = async (protocol: Protocol): Promise<void> => {
-  const buffer = protocol.getMessageBuffer()
-  const messageId = buffer.readBigInt64BE(0).toString()
-  const messageBuffer = buffer.slice(8)
-  const messageContent = messageBuffer.toString('utf8')
   const message = {
     sessionId: protocol.getToId().toString(),
-    messageId: messageId,
+    messageId: protocol.getIdentityId().toString(),
     type: protocol.getContentType(),
     fromId: protocol.getFromId().toString(),
     toId: protocol.getToId().toString(),
-    content: messageContent,
+    content: protocol.getMessageString(),
     status: MessageStatus.TYPE_SUCCESS,
     createdAt: Number(protocol.getTimeStamp()),
     updatedAt: Number(protocol.getTimeStamp())
