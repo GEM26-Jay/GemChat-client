@@ -45,8 +45,12 @@ contextBridge.exposeInMainWorld('fileManager', {
   ): Promise<ApiResult<UniversalFile>> => {
     return await ipcRenderer.invoke('getAvatar', fileName, contentType)
   },
-  uploadUserFile: async (file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
-    return await ipcRenderer.invoke('uploadUserFile', file)
+  uploadUserFile: async (
+    file: UniversalFile,
+    fromType: number,
+    fromSession?: string
+  ): Promise<ApiResult<UniversalFile>> => {
+    return await ipcRenderer.invoke('uploadUserFile', file, fromType, fromSession)
   },
   uploadAvatar: async (file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
     return await ipcRenderer.invoke('uploadAvatar', file)
@@ -54,9 +58,18 @@ contextBridge.exposeInMainWorld('fileManager', {
   openFileDialog: async (map: MimeContentTypeMap): Promise<ApiResult<UniversalFile[]>> => {
     return await ipcRenderer.invoke('openFileDialog', map)
   },
-  openImageViewer: async (path: string): Promise<void> => {
-    return await ipcRenderer.invoke('openImageViewer', path)
+  openImageViewer: async (fileName: string): Promise<void> => {
+    return await ipcRenderer.invoke('openImageViewer', fileName)
   },
+  otherSaveFile: async (fileName: string): Promise<void> => {
+    return await ipcRenderer.invoke('otherSaveFile', fileName)
+  },
+  openVideoPlayer: async (fileName: string): Promise<void> => {
+    return await ipcRenderer.invoke('openVideoPlayer', fileName)
+  },
+  onFileProgress: (callback) =>
+    ipcRenderer.on('file-ops-progress', (_event, data) => callback(data)),
+  onFileError: (callback) => ipcRenderer.on('file-ops-error', (_event, data) => callback(data))
 })
 
 // 暴露业务相关API
@@ -119,10 +132,10 @@ contextBridge.exposeInMainWorld('businessApi', {
       ipcRenderer.invoke('chat-getMessagesBySessionId', sessionId, page, pageSize),
     getMessagesBySessionIdUsingCursor: (
       sessionId: string,
-      ltMessageId: number,
+      maxTimestamp: number,
       size: number
     ): Promise<ApiResult<ChatMessage[]>> =>
-      ipcRenderer.invoke('chat-getMessagesBySessionIdUsingCursor', sessionId, ltMessageId, size),
+      ipcRenderer.invoke('chat-getMessagesBySessionIdUsingCursor', sessionId, maxTimestamp, size),
     getGroupMemberByGroupIdAndUserId: (
       groupId: string,
       userId: string
@@ -137,22 +150,37 @@ contextBridge.exposeInMainWorld('businessApi', {
       ipcRenderer.invoke('chat-getGroupSessionByGroupId', groupId),
     createGroup: (dto: CreateGroupDTO): Promise<ApiResult<ChatGroup>> =>
       ipcRenderer.invoke('chat-createGroup', dto),
+    // 渲染进程监听
     onReceiveMessage: (callback) => {
-      ipcRenderer.on('receiveMessage', (_event, data) => callback(data))
+      ipcRenderer.on('message-receive', (_event, data) => callback(data))
     },
-    sendMessage: (
-      sessionId: string,
-      type: number,
-      content: string,
-      timeStamp?: number
-    ): Promise<ApiResult<ChatMessage>> =>
-      ipcRenderer.invoke('chat-sendMessage', sessionId, type, content, timeStamp)
+    onSendMessage: (callback) => {
+      ipcRenderer.on('message-send', (_event, data) => callback(data))
+    },
+    onMessageAckSuccess: (callback) => {
+      ipcRenderer.on('message-ack-success', (_event, data) => callback(data))
+    },
+    onMessageAckFailed: (callback) => {
+      ipcRenderer.on('message-ack-error', (_event, data) => callback(data))
+    },
+    sendText: (sessionId: string, content: string): Promise<ApiResult<ChatMessage>> =>
+      ipcRenderer.invoke('chat-sendText', sessionId, content),
+    sendFile: (sessionId: string, file: UniversalFile): Promise<ApiResult<ChatMessage>> =>
+      ipcRenderer.invoke('chat-sendFile', sessionId, file),
+    downloadChatFile: (fileName: string): Promise<ApiResult<void>> =>
+      ipcRenderer.invoke('chat-download', fileName)
   },
   file: {
     getAll: (): Promise<ApiResult<FileMap[]>> => ipcRenderer.invoke('file-getAll'),
     getByCursor: (startId: number, size: number): Promise<ApiResult<FileMap[]>> =>
       ipcRenderer.invoke('file-getByCursor', startId, size),
     add: (fileMap: FileMap): Promise<ApiResult<void>> => ipcRenderer.invoke('file-add', fileMap),
+    getInfoBySessionIdAndFingerprint: (
+      sessionId: string,
+      fingerprint: string
+    ): Promise<ApiResult<FileMap>> =>
+      ipcRenderer.invoke('file-getInfoBySessionIdAndFingerprint', sessionId, fingerprint),
+    getAllSynced: (): Promise<ApiResult<FileMap[]>> => ipcRenderer.invoke('file-getAllSynced')
   }
 })
 

@@ -1,0 +1,193 @@
+/* 图片容器 */
+.content-image-wrapper {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid #6d7d93;
+  border-radius: 8px;
+  z-index: 1;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 图片显示 */
+.content-image-show {
+  max-width: 200px;
+  max-height: 200px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 6px;
+  transition: transform 0.2s;
+}
+
+.content-image-show:hover {
+  transform: scale(1.02);
+}
+
+/* 图片大小标签 */
+.content-image-size {
+  position: absolute;
+  text-align: center;
+  left: 5px;
+  bottom: 5px;
+  min-width: 60px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 5; /* 确保在遮罩下方 */
+}
+
+/* 覆盖层基础样式（进度相关） */
+.file-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  z-index: 10;
+  background-color: transparent; /* 移除默认背景，改用渐变遮罩 */
+}
+
+/* 进度遮罩层 - 用于显示已完成/未完成区域 */
+.progress-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 不影响点击交互 */
+  transition: background 0.3s ease; /* 平滑过渡效果 */
+  z-index: 1; /* 位于底层 */
+}
+
+/* 悬停状态覆盖层 */
+.file-overlay-hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.content-image-wrapper:hover .file-overlay-hover {
+  opacity: 1;
+}
+
+/* 覆盖层按钮 */
+.overlay-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(7, 7, 7, 0.5);
+  border: 1px solid rgba(a, a, a);
+  color: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition: all 0.2s;
+  z-index: 11;
+}
+
+.overlay-button:hover {
+  color: #999;
+  transform: scale(1.1);
+}
+
+/* 圆形进度条 */
+.progress-circle {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  z-index: 11; /* 确保在遮罩上方 */
+}
+
+.progress-ring-container {
+  width: 100%;
+  height: 100%;
+}
+
+.progress-ring {
+  stroke: #07c160;
+  stroke-width: 4;
+  fill: transparent;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  text-align: center;
+  min-width: 40px;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 12; /* 确保在进度环上方 */
+  background-color: #1e1e1e;
+  opacity: 50%;
+  border: 1px solid #1e1e1e;
+  border-radius: 5px;
+}
+
+/* 占位符（图片未加载时） */
+.file-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #1e1e1e;
+  color: #ccc;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.placeholder-name {
+  font-size: 12px;
+  margin-top: 8px;
+  text-align: center;
+  word-break: break-all;
+  max-width: 90%;
+}
+
+/* 错误信息 */
+.overlay-error {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: #ff4d4f;
+  font-size: 12px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 11; /* 确保在遮罩上方 */
+}

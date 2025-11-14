@@ -3,10 +3,11 @@ import { postUserRegister, getUserInfo, postUserLogin, getSearchUser } from '../
 import { clientDataStore } from '../clientDataStore'
 import { ApiResult, RegisterData, User } from '@shared/types'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { registerNettyClient as registerNettyClientAndHandler } from '../tcp-client/handler'
 import { HandleAllSync } from '@main/tcp-client/handlers/syncHandler'
 import { dbManager } from '@main/db-manage/database'
-import { localFileManager } from '@main/file-manage/localFileApi'
+import localFileManager from '@main/file-manage/localFileApi'
+import { nettyClientManager } from '@main/tcp-client/client'
+import { getNettyServerAddress } from '@main/axios/axiosNettyApi'
 
 /**
  * 用户登录（基于ApiResult处理业务逻辑）
@@ -42,7 +43,11 @@ export async function doUserLogin(account: string, password: string): Promise<Ap
       // 初始化本地存储空间
       localFileManager.initialize(user.id)
       // 初始化TCP连接
-      registerNettyClientAndHandler()
+      const address = await getNettyServerAddress()
+      if (address.isSuccess && address.data) {
+        const [ipAddr, host] = address.data.split(':')
+        nettyClientManager.initialize(ipAddr, Number.parseInt(host))
+      }
       // 同步所有历史消息
       HandleAllSync()
       return {

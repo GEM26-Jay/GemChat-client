@@ -33,7 +33,7 @@ const AddFriendBoard: React.FC = () => {
       const result = await window.businessApi.friend.requestAddFriend({
         fromId: ((await window.clientData.get('user')) as User).id,
         toId: user.id,
-        fromRemark: remark,
+        fromRemark: remark ? remark : user.username,
         statement: message
       } as FriendRequest)
 

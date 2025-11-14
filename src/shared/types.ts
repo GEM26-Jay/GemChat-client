@@ -8,27 +8,6 @@ export interface ApiResult<T = void> {
   errType?: 'business' | 'http'
 }
 
-// 消息类型枚举（保持与后端对齐）
-export enum MessageType {
-  TYPE_TEXT = 1,
-  TYPE_IMAGE = 2,
-  TYPE_FILE = 3,
-  TYPE_VOICE = 4,
-  TYPE_VIDEO = 5,
-  TYPE_LOCATION = 6,
-  TYPE_CUSTOM = 99
-}
-
-// 消息类型枚举（保持与后端对齐）
-export enum MessageStatus {
-  TYPE_SENDING = 1,
-  TYPE_FAILED = 2,
-  TYPE_SUCCESS = 3,
-  TYPE_DRAWBACK = 4,
-  TYPE_DELETED = 5,
-  TYPE_READ = 6
-}
-
 /** 用户资料类型（对应user_profile表） */
 export type User = {
   id: string // 用户唯一标识
@@ -98,7 +77,7 @@ export interface UniversalFile {
   mimeType: MIME // 文件MIME类型
   fileSize: number // 文件大小（字节）
   contentType: null | 'Base64' | 'Text' | 'ArrayBuffer' // 内容格式
-  content?: string | ArrayBuffer // 文件内容
+  content?: null | string | ArrayBuffer // 文件内容
   localPath?: string // 本地文件路径
   fingerprint?: string // 文件指纹
 }
@@ -172,21 +151,61 @@ export interface ChatSession {
   lastMessageTime: number | null // 最后一条消息时间戳
 }
 
+// 消息类型枚举
+export enum MessageType {
+  FAILED = -1,
+  EMPTY = 0,
+  TEXT = 1,
+  IMAGE = 2,
+  AUDIO = 3,
+  VIDEO = 4,
+  OTHER_FILE = 5,
+  LOCATION = 6
+}
+
+// 消息类型枚举
+export enum MessageStatus {
+  TYPE_SUCCESS = 1, // 服务器状态
+  TYPE_DELETED = 2, // 服务器状态
+  TYPE_DRAWBACK = 3, // 服务器状态
+  TYPE_SENDING = 0,
+  TYPE_FAILED = -1,
+  TYPE_READED = 5
+}
+
 /**
  * 聊天消息类型
  */
 export interface ChatMessage {
-  id: number // 主键
-  sessionId: string // 会话ID
-  messageId: string
-  type: number
+  id?: number // 主键
   fromId: string // 发送者ID
-  toId: string // 接收者ID（用户ID或群ID）
-  content: string | null // 消息内容
-  status: number
+  sessionId: string // 会话ID
+  identityId?: string // 发送标识
+  messageId?: string // 消息主键
+  type: MessageType
+  content: string
+  status: MessageStatus
   replyToId?: string | null // 引用消息ID（回复功能）
   createdAt: number // 发送时间戳
   updatedAt: number // 更新时间戳
+}
+
+/**
+ * 文件映射状态枚举（结合本地/云端存在性 + 操作状态）
+ */
+export enum FileMapStatus {
+  // 异常状态，不存在
+  NOT_EXIST = 0,
+  // 初始状态：待下载
+  WAIT_DOWNLOAD = 1,
+  // 初始状态：待上传
+  WAIT_UPLOAD = 2,
+  // 操作中：本地存在，正在上传到云端
+  UPLOADING = 3,
+  // 操作中：云端存在，正在下载到本地
+  DOWNLOADING = 4,
+  // 本地和云端都存在
+  SYNCED = 5
 }
 
 /**
@@ -200,10 +219,30 @@ export interface FileMap {
   size: number
   mimeType: string
   location: string
-  status: number // 0:未下载, 1: 已下载
+  status: FileMapStatus
   createdAt: number
   updatedAt: number
-  sessionId: string
-  messageId: string
-  sourceInfo: string
+  sourceType: number // 0-聊天文件，1-用户上传
+  sessionId?: string
+  sourceInfo?: string
+}
+
+/**
+ * 文件进度回调
+ */
+export type FileProgressEvent = {
+  taskId: string // 格式: 文件名+upload/download
+  progress: number // 0-100
+  type: 'upload' | 'download'
+  fileName: string
+}
+
+/**
+ * 文件异常回调
+ */
+export type FileErrorEvent = {
+  taskId: string
+  type: 'upload' | 'download'
+  fileName: string
+  error: string
 }

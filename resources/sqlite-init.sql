@@ -89,9 +89,8 @@ CREATE TABLE IF NOT EXISTS chat_message (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT NOT NULL,
     message_id TEXT NOT NULL,
-    type INTEGER NOT NULL,
     from_id TEXT NOT NULL,
-    to_id TEXT NOT NULL,
+    type INTEGER NOT NULL,
     content TEXT,
     status INTEGER,
     reply_to_id TEXT NULL,
@@ -107,11 +106,11 @@ CREATE TABLE IF NOT EXISTS file_map (
     fingerprint TEXT NOT NULL,
     size        TEXT NOT NULL,
     mime_type   TEXT NOT NULL,
-    location    TEXT NOT NULL,
-    status      INTEGER DEFAULT 1 NOT NULL,
+    location    TEXT,
+    status      INTEGER NOT NULL,
     created_at  INTEGER NOT NULL,
     updated_at  INTEGER NOT NULL,
-    session_id  TEXT NOT NULL,
-    message_id  TEXT NOT NULL,
-    source_info TEXT NOT NULL
+    source_type INTEGER NOT NULL,
+    session_id  TEXT,
+    source_info TEXT
 );

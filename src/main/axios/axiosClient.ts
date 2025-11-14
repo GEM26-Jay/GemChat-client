@@ -24,7 +24,8 @@ export interface RawResponse<T = void> {
 
 // 创建Axios实例
 export const axiosClient = axios.create({
-  baseURL: 'http://192.168.137.1:8888/',
+  // baseURL: 'http://192.168.137.1:8888/',
+  baseURL: 'http://localhost:8888/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -39,7 +40,7 @@ axiosClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${currentToken}`
     }
     console.log(
-      `[axiosClient]: 发起远程请求: ${config.url}}, 携带数据: ${JSON.stringify(config.data)}`
+      `[axiosClient]: 发起远程请求: ${config.url}}, 携带数据: ${JSON.stringify(config.params)}、${JSON.stringify(config.data)}`
     )
     return config
   },

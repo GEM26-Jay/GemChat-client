@@ -1,28 +1,94 @@
-/* 消息容器 */
-.message-box {
+/* 基础样式重置 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* 暗色调模式文字抗锯齿 */
+  color-scheme: dark;
+}
+
+/* 初始加载动画（全屏居中） */
+.initial-loading {
   width: 100%;
   height: 100%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a; /* 深色背景 */
+}
+
+/* 通用加载动画 */
+.spinner {
+  animation: spin 1.2s linear infinite;
+  color: #4d90fe; /* 暗色调中更柔和的主题蓝 */
+}
+
+/* 加载更多提示（顶部） */
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  margin: 8px 0;
+  color: #aaa; /* 浅色文字适配深色背景 */
+  font-size: 13px;
+  opacity: 0;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.loading-text {
+  margin-left: 8px;
+  animation: bounce 1.6s ease-in-out infinite;
+}
+
+/* 加载更多的 spinner 动画更快 */
+.loading-more .spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+/* 消息容器 */
+.message-container {
+  width: 100%;
+  height: 100%;
   list-style: none;
-  margin: 0;
-  padding: 10px;
-  flex-direction: column;
-  gap: 16px; /* 消息项之间的间距 */
+  padding: 16px;
   overflow-y: auto;
-  /* 1. Firefox 基础优化：细滚动条 + 配色 */
-  scrollbar-width: thin; /* 窄滚动条 */
-  scrollbar-color: #ccc #f8f8f8; /* 滑块色 + 轨道色 */
-  /* 2. 平滑滚动（可选，提升体验） */
+  background-color: #121212; /* 深色主背景 */
+  scrollbar-width: thin;
+  scrollbar-color: #333 #1e1e1e; /* 深色滚动条 */
   scroll-behavior: smooth;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  margin: 20px;
+  color: #888; /* 暗色调空状态文字 */
+  font-size: 14px;
+  background-color: #1e1e1e; /* 略浅的深色背景 */
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* 深色阴影更明显 */
+}
+
+/* 消息项容器 */
+.message-item {
+  margin: 10px 0;
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+/* 发送中消息样式 */
+.sending {
+  opacity: 0.7; /* 暗色调中降低透明度更明显 */
 }
 
 /* 我的消息 - 靠右对齐 */
 .message-item-mine {
   width: 100%;
   display: flex;
-  flex-direction: row-reverse; /* 反转排列顺序，实现右对齐 */
+  flex-direction: row-reverse;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
 /* 他人消息 - 靠左对齐 */
@@ -30,63 +96,66 @@
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* 消息内容容器 */
 .message-content {
-  display: inline-block; /* 关键：使容器宽度与内容匹配 */
-  max-width: 70%; /* 限制最大宽度，防止过长 */
+  display: inline-block;
+  max-width: 70%;
 }
 
 /* 消息时间 */
 .message-time {
-  height: 10px;
-  font-size: 10px;
-  color: #ccc;
+  font-size: 11px;
+  color: #777; /* 时间文字更暗 */
   margin-bottom: 4px;
-  white-space: nowrap; /* 防止时间换行 */
-  overflow: hidden;
-  text-overflow: ellipsis; /* 超长时显示省略号 */
-  padding-left: 4px; /* 时间与头像对齐 */
+  white-space: nowrap;
 }
 
 .message-item-mine .message-time {
-  text-align: right; /* 我的消息时间靠右 */
+  text-align: right;
   padding-right: 4px;
 }
 
-/* 消息文本气泡 */
+.message-item-others .message-time {
+  text-align: left;
+  padding-left: 4px;
+}
+
+/* 消息气泡 */
 .message-text {
-  display: inline-block; /* 使气泡宽度与内容匹配 */
-  padding: 6px 12px;
-  border-radius: 6px;
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-size: 14px;
-  /* position: relative; */
-  line-height: 1.6; 
-  word-wrap: break-word; /* 长单词自动换行 */
+  line-height: 1.6;
+  word-wrap: break-word;
+  position: relative;
+  max-width: 100%;
+  /* 文字抗锯齿优化 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 我的消息 - 靠右对齐 */
-.message-item-mine .message-content {
-  text-align: right; /* 时间和气泡整体右对齐 */
-}
-
+/* 我的消息气泡 */
 .message-item-mine .message-text {
-  background-color: #95ec69;
-  text-align: left; /* 消息文本左对齐（更易阅读） */
+  background-color: #0f52ba; /* 暗色调中的蓝色气泡（更深沉） */
+  color: #f0f0f0; /* 浅色文字 */
+  border-top-right-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* 他人消息 - 靠左对齐 */
-.message-item-others .message-content {
-  text-align: left; /* 时间和气泡整体左对齐 */
-}
-
+/* 他人消息气泡 */
 .message-item-others .message-text {
-  background-color: #ffffff;
-  color: #333;
+  background-color: #2d2d2d; /* 他人消息深色气泡 */
+  color: #e0e0e0; /* 浅色文字 */
+  border: 1px solid #3a3a3a; /* 深色边框 */
+  border-top-left-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* 消息气泡尖角 */
+/* 气泡尖角 */
 .message-text::before {
   content: "";
   position: absolute;
@@ -98,21 +167,69 @@
 }
 
 .message-item-mine .message-text::before {
-  right: 30px;
-  border-left: 6px solid #95ec69; /* 我的消息尖角朝右 */
+  right: -6px;
+  border-left: 6px solid #0f52ba; /* 匹配我的消息气泡颜色 */
 }
 
 .message-item-others .message-text::before {
   left: -6px;
-  border-right: 6px solid #ffffff; /* 他人消息尖角朝左 */
+  border-right: 6px solid #2d2d2d; /* 匹配他人消息气泡颜色 */
 }
 
 /* 头像 */
 .message-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 4px;
-  border: 1px #4682B4 solid;
+  border-radius: 6px;
   object-fit: cover;
-  flex-shrink: 0; /* 防止头像被压缩 */
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); /* 深色环境下阴影更重 */
+  border: 1px solid #333; /* 深色边框 */
+}
+
+/* 动画定义 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 滚动条样式优化（针对webkit内核） */
+.message-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.message-container::-webkit-scrollbar-track {
+  background: #1e1e1e;
+  border-radius: 3px;
+}
+
+.message-container::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+.message-container::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }

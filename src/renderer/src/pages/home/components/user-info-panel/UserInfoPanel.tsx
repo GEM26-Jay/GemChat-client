@@ -298,7 +298,7 @@ const UserInfoPanel: React.FC = () => {
             <div className={styles['contact-item']}>
               <span className={styles['contact-label']}>性别：</span>
               <span className={styles['contact-value']}>
-                {!user.gender ? '未知' : user.gender === 1 ? '男' : '女'}
+                {!user.gender || user.gender == 0 ? '保密' : user.gender == 1 ? '男' : '女'}
               </span>
             </div>
 

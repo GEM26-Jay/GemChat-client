@@ -6,7 +6,6 @@ import { registerDataIpcHandlers } from './clientDataStore'
 import { registerFileManageIpcHandlers } from './file-manage/fileManage'
 import { registerUserApiIpcHandlers } from './businessApi/userApi'
 import { registerLocalAccountApiIpcHandlers } from './businessApi/localAccountApi'
-import { nettyClients } from './tcp-client/client'
 import { registerFriendApiIpcHandlers } from './businessApi/friendApi'
 import { registerChatApiIpcHandlers } from './businessApi/chatApi'
 import { registerFileManagerApiIpcHandlers } from './businessApi/fileManagerApi'
@@ -263,9 +262,6 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('openMainWindow', async () => {
-    for (const nettyClient of nettyClients) {
-      nettyClient.connect()
-    }
     createMainWindow()
   })
 

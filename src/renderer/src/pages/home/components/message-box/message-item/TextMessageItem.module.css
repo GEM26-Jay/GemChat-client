@@ -1,0 +1,32 @@
+/* 气泡基础样式 */
+.bubble {
+  padding: 9px 13px;
+  border-radius: 16px;
+  word-break: break-word; 
+  line-height: 1.5; 
+  font-size: 16px;
+  display: inline-block;
+}
+
+/* 自己的消息气泡 */
+.bubble-mine {
+  background-color: #00C16E; 
+  color: white; 
+  align-self: flex-end; /* 靠右对齐 */
+}
+
+/* 他人的消息气泡 */
+.bubble-others {
+  background-color: #FFFFFF; 
+  color: #333333; 
+  border: 1px solid #ECECEC; 
+  align-self: flex-start; /* 靠左对齐 */
+}
+
+/* 适配小屏幕（手机） */
+@media (max-width: 480px) {
+  .bubble {
+    font-size: 15px;
+    padding: 8px 12px;
+  }
+}

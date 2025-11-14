@@ -26,7 +26,7 @@ export class LengthFieldBasedFrameDecoder {
     this.props = props
     this.minLength = props.lengthFieldOffset + props.lengthFieldLength
     this.buffer = Buffer.alloc(0)
-    this.maxFrameLength = props.maxFrameLength || 1024 * 1024 // 默认最大1MB
+    this.maxFrameLength = props.maxFrameLength || 1024 * 1024 * 1024 // 默认最大1GB
   }
 
   /**

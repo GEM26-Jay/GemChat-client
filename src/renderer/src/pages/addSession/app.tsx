@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import AddSessionBoard from './addSessionBoard'
+import AddSessionBoard from './AddSessionBoard'
 
 // 创建 React Query 客户端实例，用于配置和管理数据请求
 const queryClient = new QueryClient({

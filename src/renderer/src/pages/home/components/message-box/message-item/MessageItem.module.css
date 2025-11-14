@@ -1,0 +1,86 @@
+/* 消息项容器：区分自己和他人的整体布局 */
+.message-item-mine,
+.message-item-others {
+  display: flex;
+  align-items: flex-start; /* 头像与气泡顶部对齐 */
+  padding: 8px 16px; 
+  gap: 10px; 
+  width: 100%; 
+}
+
+/* 自己的消息：头像在右，内容在左 */
+.message-item-mine {
+  flex-direction: row-reverse; 
+}
+
+/* 他人的消息：头像在左，内容在右 */
+.message-item-others {
+  flex-direction: row; 
+}
+
+/* 头像样式 */
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px; 
+  object-fit: cover; 
+  flex-shrink: 0; 
+  align-self: flex-start; /* 强制顶部对齐 */
+}
+
+/* 消息内容容器（包含用户名、气泡、状态图标） */
+.message-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px; 
+  max-width: 75%;
+}
+
+/* 群聊用户名样式 */
+.message-userName {
+  font-size: 12px;
+  color: #888888; 
+  line-height: 1; 
+  padding-left: 4px; 
+}
+
+/* 消息发送状态图标（发送中/失败） */
+.message-sending {
+  position: absolute;
+  left: -20px;
+  bottom: 2px;
+  color: #999999;
+  font-size: 14px;
+  animation: spin 1.5s linear infinite; 
+}
+
+.message-failed {
+  position: absolute;
+  left: -20px;
+  bottom: 2px;
+  color: #ff4d4f; 
+  font-size: 14px;
+  margin-left: 6px;
+  border: 1px solid #888888;
+  border-radius: 50%;
+}
+
+/* 自己的消息：状态图标在气泡右侧 */
+.message-item-mine .message-sending,
+.message-item-mine .message-failed {
+  margin-left: 0;
+  margin-right: 6px; 
+}
+
+/* 状态图标与气泡的布局容器 */
+.message-content > div {
+  display: flex;
+  align-items: center; 
+}
+
+/* 加载动画关键帧 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

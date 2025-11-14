@@ -1,6 +1,6 @@
 import { Database } from 'sqlite'
 import { dbManager } from './database'
-import { FileMap } from '@shared/types'
+import { FileMap, FileMapStatus } from '@shared/types'
 
 /**
  * 数据库表行记录类型（与修改后的file_map表结构对应）
@@ -16,9 +16,9 @@ interface DbFileMapRow {
   status: number
   created_at: number
   updated_at: number
-  session_id: string
-  message_id: string
-  source_info: string
+  source_type: number
+  session_id?: string
+  source_info?: string
 }
 
 /**
@@ -36,8 +36,8 @@ const DbFileMapRow2FileMap = (data: DbFileMapRow): FileMap => {
     status: data.status,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    sourceType: data.source_type,
     sessionId: data.session_id,
-    messageId: data.message_id,
     sourceInfo: data.source_info
   }
 }
@@ -107,15 +107,18 @@ class FileMapDB {
   }
 
   /**
-   * 根据会话ID和消息ID查询文件映射记录
+   * 根据会话ID和文件指纹查询文件映射记录
    */
-  async getBySessionAndMessageId(sessionId: string, messageId: string): Promise<FileMap | null> {
+  async getBySessionAndFingerprint(
+    sessionId: string,
+    fingerprint: string
+  ): Promise<FileMap | null> {
     const db = await this.ensureDb()
-    const result: DbFileMapRow = await db.all(
-      'SELECT * FROM file_map WHERE session_id = ? AND message_id = ?',
-      [sessionId, messageId]
+    const result: DbFileMapRow[] = await db.all(
+      'SELECT * FROM file_map WHERE session_id = ? AND fingerprint = ?',
+      [sessionId, fingerprint]
     )
-    return result ? DbFileMapRow2FileMap(result) : null
+    return result.length > 0 ? DbFileMapRow2FileMap(result[0]) : null
   }
 
   /**
@@ -134,23 +137,66 @@ class FileMapDB {
   }
 
   /**
-   * 添加或更新文件映射记录（存在则更新，不存在则插入）
+   * 添加或修改(必须持有SessionId和Fingerprint)
    */
-  async add(data: FileMap): Promise<void> {
+  async addOrUpdateBySessionAndFingerprint(data: FileMap): Promise<void> {
     const db = await this.ensureDb()
-    // 自动填充时间戳（如果未提供）
+
+    // 自动填充时间戳
     const now = Date.now()
     const finalData = {
       ...data,
       createdAt: data.createdAt || now,
-      updatedAt: data.updatedAt || now
+      updatedAt: now // 更新时强制刷新updatedAt
     }
 
+    // 核心逻辑：session_id和fingerprint都不为空时，先查是否存在
+    if (finalData.sessionId && finalData.fingerprint) {
+      // 1. 先查询是否存在匹配记录
+      const results: DbFileMapRow | undefined = await db.get(
+        `SELECT id FROM file_map WHERE session_id = ? AND fingerprint = ? LIMIT 1`,
+        [finalData.sessionId, finalData.fingerprint]
+      )
+      // 2. 存在则更新，不存在则插入
+      if (results != undefined && results != null) {
+        // 更新语句：只更新需要变更的字段
+        await db.run(
+          `UPDATE file_map SET 
+          origin_name = ?,
+          remote_name = ?,
+          size = ?,
+          mime_type = ?,
+          location = ?,
+          status = ?,
+          updated_at = ?,
+          source_type = ?,
+          source_info = ?
+        WHERE session_id = ? AND fingerprint = ?`,
+          [
+            finalData.originName,
+            finalData.remoteName,
+            finalData.size,
+            finalData.mimeType,
+            finalData.location,
+            finalData.status,
+            finalData.updatedAt,
+            finalData.sourceType,
+            finalData.sourceInfo,
+            finalData.sessionId,
+            finalData.fingerprint
+          ]
+        )
+        return
+      }
+    }
+
+    // 3. session_id为空 或 无匹配记录 → 直接插入新数据
     await db.run(
       `INSERT INTO file_map 
-       (origin_name, remote_name, fingerprint, size, mime_type, 
-        location, status, created_at, updated_at, session_id, message_id, source_info) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (origin_name, remote_name, fingerprint, size, mime_type, 
+      location, status, created_at, updated_at, 
+      source_type, session_id, source_info) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         finalData.originName,
         finalData.remoteName,
@@ -161,8 +207,8 @@ class FileMapDB {
         finalData.status,
         finalData.createdAt,
         finalData.updatedAt,
+        finalData.sourceType,
         finalData.sessionId,
-        finalData.messageId,
         finalData.sourceInfo
       ]
     )
@@ -182,16 +228,6 @@ class FileMapDB {
     )
   }
 
-  /**
-   * 根据会话ID和消息ID删除相关文件记录
-   */
-  async deleteBySessionId(sessionId: string, messageId: string): Promise<void> {
-    const db = await this.ensureDb()
-    await db.run('update file_map set status = 0 WHERE session_id = ? AND message_id = ?', [
-      sessionId,
-      messageId
-    ])
-  }
   async getByCursor(startId: number, size: number): Promise<FileMap[]> {
     const db = await this.ensureDb()
     const data = await db.all<DbFileMapRow[]>(
@@ -200,23 +236,31 @@ class FileMapDB {
     )
     return data ? data.map((row) => DbFileMapRow2FileMap(row)) : []
   }
+
   /**
-   * 根据会话和文件指纹更新文件信息
+   * 根据远程文件名更新全部状态
    */
-  async updateTempMessageId(
-    messageId: string,
-    sessionId: string,
-    createdAt: number
-  ): Promise<void> {
+  async updateStatusByFingerprint(status: FileMapStatus, fingerprint: string): Promise<void> {
     const db = await this.ensureDb()
     await db.run(
       `UPDATE file_map SET 
-      message_id = ?
-      WHERE 
-      session_id = ? AND
-      created_at = ?`,
-      [messageId, sessionId, createdAt]
+       status = ?
+       WHERE 
+       fingerprint = ?`,
+      [status, fingerprint]
     )
+  }
+
+  /**
+   * 获取 已经同步了的文件
+   */
+  async getAllSynced(): Promise<FileMap[]> {
+    const db = await this.ensureDb()
+    const results: DbFileMapRow[] = await db.all(
+      'SELECT * FROM file_map where status=?',
+      FileMapStatus.SYNCED
+    )
+    return results.map((row) => DbFileMapRow2FileMap(row))
   }
 }
 

@@ -40,7 +40,7 @@ declare global {
         ) => Promise<ApiResult<ChatMessage[]>>
         getMessagesBySessionIdUsingCursor: (
           sessionId: string,
-          ltMessageId: number,
+          maxTimestamp: number,
           size: number
         ) => Promise<ApiResult<ChatMessage[]>>
         getGroupMemberByGroupIdAndUserId: (
@@ -53,18 +53,24 @@ declare global {
         ) => Promise<ApiResult<ChatSession>>
         getGroupSessionByGroupId: (groupId: string) => Promise<ApiResult<ChatSession>>
         createGroup: (dto: CreateGroupDTO) => Promise<ApiResult<Group>>
+        // 给渲染进程的响应
         onReceiveMessage: (callback) => void
-        sendMessage: (
-          sessionId: string,
-          type: number,
-          content: string,
-          timeStamp?: number
-        ) => Promise<ApiResult<ChatMessage>>
+        onSendMessage: (callback) => void
+        onMessageAckSuccess: (callback) => void
+        onMessageAckFailed: (callback) => void
+        sendText: (sessionId: string, content: string) => Promise<ApiResult<ChatMessage>>
+        sendFile: (sessionId: string, file: UniversalFile) => Promise<ApiResult<ChatMessage>>
+        downloadChatFile: (fileName: string) =>  Promise<ApiResult<void>>
       }
       file: {
         getAll: () => Promise<ApiResult<FileMap[]>>
         getByCursor: (startId: number, size: number) => Promise<ApiResult<FileMap[]>>
         add: (fileMap: FileMap) => Promise<ApiResult<void>>
+        getInfoBySessionIdAndFingerprint: (
+          sessionId: string,
+          fingerprint: string
+        ) => Promise<ApiResult<FileMap>>
+        getAllSynced: () => Promise<ApiResult<FileMap[]>>
       }
     }
     utilApi: {
@@ -87,6 +93,8 @@ declare global {
       onUpdate: (callback: () => void) => void
     }
     fileManager: {
+      openFile(remoteName: string): unknown
+      openVideoPlayer(remoteName: string): unknown
       getUserFile: (
         fileName: string,
         contentType: null | 'ArrayBuffer' | 'Base64' | 'Text'
@@ -95,10 +103,18 @@ declare global {
         fileName: string,
         contentType: null | 'ArrayBuffer' | 'Base64'
       ) => Promise<ApiResult<UniversalFile>>
-      uploadUserFile: (file: UniversalFile) => Promise<ApiResult<UniversalFile>>
+      uploadUserFile: (
+        file: UniversalFile,
+        fromType: number,
+        fromSession?: string
+      ) => Promise<ApiResult<UniversalFile>>
       uploadAvatar: (file: UniversalFile) => Promise<ApiResult<UniversalFile>>
       openFileDialog: (map: MimeContentTypeMap) => Promise<ApiResult<UniversalFile[]>>
-      openImageViewer: (path: string) => Promise<void>
+      openImageViewer: (fileName: string) => Promise<void>
+      otherSaveFile: (fileName: string) => Promise<void>
+      openVideoPlayer: (fileName: string) => Promise<void>
+      onFileProgress: (callback) => void
+      onFileError: (callback) => void
     }
     update: {
       onUpdate: (callback) => void

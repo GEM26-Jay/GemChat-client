@@ -7,6 +7,9 @@ export function registerFileManagerApiIpcHandlers(): void {
   ipcMain.handle('file-getAll', async (): Promise<ApiResult<FileMap[]>> => {
     return { isSuccess: true, data: await fileMapDB.getAll() }
   })
+  ipcMain.handle('file-getAllSynced', async (): Promise<ApiResult<FileMap[]>> => {
+    return { isSuccess: true, data: await fileMapDB.getAllSynced() }
+  })
   // file-getByCursor
   ipcMain.handle(
     'file-getByCursor',
@@ -16,7 +19,15 @@ export function registerFileManagerApiIpcHandlers(): void {
   )
   // file-add
   ipcMain.handle('file-add', async (_event, fileMap: FileMap): Promise<ApiResult<void>> => {
-    fileMapDB.add(fileMap)
+    fileMapDB.addOrUpdateBySessionAndFingerprint(fileMap)
     return { isSuccess: true }
   })
+  // file-getInfoBySessionIdAndFingerprint
+  ipcMain.handle(
+    'file-getInfoBySessionIdAndFingerprint',
+    async (_event, sessionId: string, fingerprint: string): Promise<ApiResult<FileMap | null>> => {
+      const re = await fileMapDB.getBySessionAndFingerprint(sessionId, fingerprint)
+      return { isSuccess: true, data: re }
+    }
+  )
 }

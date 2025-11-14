@@ -1,420 +1,342 @@
-import { ossDownloadAvatar, ossDownloadFile, ossUploadAvatar, ossUploadFile } from './aliyunOssApi'
-import { BrowserWindow, dialog, ipcMain, OpenDialogOptions, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import path from 'path'
-import fs from 'fs/promises'
-import sharp from 'sharp'
 import { ApiResult, MimeContentTypeMap, UniversalFile } from '@shared/types'
-import { getMIMEFromFilename, MIME } from '@shared/utils'
-import { createHash } from 'crypto'
-import { localFileManager } from './localFileApi'
+import localFileManager from './localFileApi'
+import localAvatarManager from './localAvatarApi'
+import { compressImage, openFileDialog, openImageWithSystemViewer } from './fileUtils'
+import {
+  getOssAvatarDownloadToken,
+  getOssFileDownloadToken,
+  postOssFileUploadToken,
+  postOssAvatarUploadToken,
+  putOssFileSuccessUpload
+} from '@main/axios/axiosOssApi'
+import { ossDownload, ossUpload } from './aliyunOssApi'
+import fs from 'fs'
+import fsPromises from 'fs/promises'
 
-// 头像压缩配置
-const AVATAR_COMPRESS_CONFIG = {
-  width: 128, // 目标宽度
-  height: 128, // 目标高度
-  quality: 80 // 压缩质量 (0-100)
+/**
+ * 保存文件到本地用户目录
+ */
+export const saveFileToLocal = async (file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
+  try {
+    // 1. 校验入参
+    if (!file?.fileName) throw new Error('[saveFileToLocal] 文件名不能为空')
+    if (!file.localPath) throw new Error('[saveFileToLocal] 文件本地路径不能为空')
+    try {
+      await fs.promises.access(file.localPath, fs.constants.F_OK)
+    } catch {
+      throw new Error(`[saveFileToLocal] 本地文件不存在: ${file.localPath}`)
+    }
+
+    // 3. 保存到本地文件空间
+    const userFileDir = localFileManager.getUserFileDir()
+    if (!userFileDir) {
+      return { isSuccess: false, msg: '[saveFileToLocal] 用户文件目录未初始化' }
+    }
+    const newFileName = file.fingerprint + file.fileName.slice(file.fileName.lastIndexOf('.'))
+    const updatedFile = { ...file, fileName: newFileName }
+    const localFile = await localFileManager.writeUserFile(updatedFile)
+    return {
+      isSuccess: true,
+      data: localFile
+    }
+  } catch (error) {
+    return {
+      isSuccess: false,
+      msg: error as string
+    }
+  }
 }
 
 /**
- * ArrayBuffer 转 Buffer（仅用于 sharp 等依赖 Buffer 的底层库）
- * @param arrayBuffer 待转换的 ArrayBuffer
- * @returns 转换后的 Buffer
+ * 上传用户文件到 OSS 上
  */
-const arrayBufferToBuffer = (arrayBuffer: ArrayBuffer): Buffer => {
-  return Buffer.from(arrayBuffer)
-}
+export const sendFileToOss = async (
+  fileName: string,
+  fromType: number,
+  onProgress: (value: number) => unknown = () => {},
+  onError: () => unknown = () => {},
+  fromSession?: string,
+  fromInfo?: string
+): Promise<ApiResult<void>> => {
+  try {
+    // 校验入参
+    if (!fileName) throw new Error('[sendFileToOss] 文件名不能为空')
 
-/**
- * 压缩图片为指定尺寸（输入输出均为 ArrayBuffer 类型）
- * @param file 原始图片文件（符合 UniversalFile 规范）
- * @returns 压缩后的图片文件（content 为 ArrayBuffer）
- */
-const compressImage = async (file: UniversalFile): Promise<UniversalFile> => {
-  if (!file.content) {
-    throw new Error('图片内容不能为空')
-  }
-  if (!file.mimeType?.startsWith('image/')) {
-    throw new Error(`不支持的图片类型: ${file.mimeType}`)
-  }
-  if (!['Base64', 'ArrayBuffer'].includes(file.contentType || '')) {
-    throw new Error(`图片压缩仅支持 Base64/ArrayBuffer 格式，当前为: ${file.contentType}`)
-  }
+    const file = await localFileManager.readUserFile(fileName, null)
+    if (!file) throw new Error('[sendFileToOss] 用户空间不存在该文件')
 
-  // 统一将输入内容转换为 Buffer（适配 sharp 库）
-  let imageBuffer: Buffer
-  if (file.contentType === 'Base64' && typeof file.content === 'string') {
-    // 移除 dataURL 前缀（若存在）并解码 Base64
-    const base64Data = file.content.replace(/^data:[^;]+;base64,/, '')
-    imageBuffer = Buffer.from(base64Data, 'base64')
-  } else if (file.contentType === 'ArrayBuffer' && file.content instanceof ArrayBuffer) {
-    // ArrayBuffer 转 Buffer（仅临时用于 sharp 处理）
-    imageBuffer = arrayBufferToBuffer(file.content)
-  } else {
-    throw new Error(`图片内容与格式不匹配，contentType: ${file.contentType}`)
-  }
-
-  // 执行图片压缩
-  const compressedBuffer = await sharp(imageBuffer)
-    .resize(AVATAR_COMPRESS_CONFIG.width, AVATAR_COMPRESS_CONFIG.height, {
-      fit: 'cover', // 保持比例并填充目标尺寸
-      withoutEnlargement: true, // 不放大小于目标尺寸的图片
-      background: { r: 255, g: 255, b: 255, alpha: 0 } // 透明背景（PNG 适用）
+    // 2. 获取上传令牌
+    const tokenApi = await postOssFileUploadToken({
+      name: file.fileName,
+      size: file.fileSize,
+      mimeType: file.mimeType,
+      fingerprint: file.fingerprint as string,
+      fromType,
+      fromSession,
+      fromInfo: fromInfo
     })
-    .jpeg({ quality: AVATAR_COMPRESS_CONFIG.quality, mozjpeg: true }) // 强制转为 JPEG 格式
-    .toBuffer()
 
-  // 转换压缩结果为 ArrayBuffer，保持输出类型一致性
-  const compressedArrayBuffer = compressedBuffer.buffer.slice(
-    compressedBuffer.byteOffset,
-    compressedBuffer.byteOffset + compressedBuffer.byteLength
-  )
+    if (!tokenApi.isSuccess || !tokenApi.data) throw new Error('token获取失败')
 
-  // 返回压缩后的文件对象（严格遵循 UniversalFile 接口）
-  return {
-    ...file,
-    fileName: `${path.basename(file.fileName, path.extname(file.fileName))}.jpg`, // 统一后缀为 .jpg
-    mimeType: 'image/jpeg', // 压缩后统一为 JPEG 类型
-    content: compressedArrayBuffer as ArrayBuffer,
-    contentType: 'ArrayBuffer', // 明确标记为 ArrayBuffer
-    fileSize: compressedArrayBuffer.byteLength // 使用 ArrayBuffer 实际长度
+    const token = tokenApi.data
+    if (!token.exist) {
+      // 异步上传开始，提交上传任务
+      const selfOnProgress = async (value): Promise<void> => {
+        if (value >= 100) {
+          const apiRe = await putOssFileSuccessUpload(token.name)
+          if (apiRe.isSuccess) {
+            onProgress(value)
+          } else {
+            onError()
+          }
+        }
+      }
+      ossUpload(tokenApi.data, file.localPath as string, selfOnProgress, onError)
+    } else {
+      // OSS 文件存在，模拟上传进度
+      setTimeout(() => onProgress(0), 500)
+      setTimeout(() => onProgress(20), 1000)
+      setTimeout(() => onProgress(40), 1500)
+      setTimeout(() => onProgress(60), 2000)
+      setTimeout(() => onProgress(80), 2500)
+      setTimeout(() => onProgress(100), 3000)
+    }
+    return {
+      isSuccess: true
+    }
+  } catch (error) {
+    return {
+      isSuccess: false,
+      msg: error as string
+    }
   }
 }
 
 /**
- * 获取用户文件（优先本地读取，本地不存在则从 OSS 下载并缓存到本地）
- * @param fileName 文件名（含扩展名）
- * @param contentType 期望返回的内容格式（null/ArrayBuffer/Base64/Text）
- * @returns 包含文件信息的 ApiResult
+ * 下载 OSS 文件到用户目录
  */
-export const getUserFile = async (
+export const downloadFileFromOss = async (
+  fileName: string,
+  onProgress: (value: number) => unknown,
+  onError: () => unknown
+): Promise<ApiResult<void>> => {
+  try {
+    // 1. 检查本地文件是否存在
+    if (!fileName) throw new Error('文件名无效')
+
+    const localExists = await localFileManager.userFileExists(fileName)
+
+    if (!localExists) {
+      const tokenApi = await getOssFileDownloadToken(fileName)
+      if (!tokenApi.isSuccess || !tokenApi.data) throw new Error('Token获取失败')
+      ossDownload(tokenApi.data, localFileManager.getUserFileDir(), onProgress, onError)
+    } else {
+      // 本地存在文件，模拟下载进度
+      setTimeout(() => onProgress(0), 500)
+      setTimeout(() => onProgress(20), 1000)
+      setTimeout(() => onProgress(40), 1500)
+      setTimeout(() => onProgress(60), 2000)
+      setTimeout(() => onProgress(80), 2500)
+      setTimeout(() => onProgress(100), 3000)
+    }
+    return {
+      isSuccess: true
+    }
+  } catch (error) {
+    return {
+      isSuccess: false,
+      msg: error as string
+    }
+  }
+}
+
+/**
+ * 将用户文件另存
+ */
+export const otherSaveFile = async (
+  fileName: string,
+  targetPath: string
+): Promise<ApiResult<boolean>> => {
+  try {
+    // 1. 校验入参
+    if (!fileName) throw new Error('[otherSaveFile] 文件名不能为空')
+    if (!targetPath) throw new Error('[otherSaveFile] 目标路径不能为空')
+
+    if (!(await localFileManager.userFileExists(fileName))) throw new Error('文件不存在')
+    const sourcePath = path.join(await localFileManager.getUserFileDir(), fileName)
+    fsPromises.copyFile(sourcePath, targetPath)
+    return {
+      isSuccess: true
+    }
+  } catch (error) {
+    return {
+      isSuccess: false,
+      msg: error as string
+    }
+  }
+}
+
+/**
+ * 获取用户文件（从本地获取）
+ */
+export const getUserFileFromLocal = async (
   fileName: string,
   contentType: null | 'ArrayBuffer' | 'Base64' | 'Text'
 ): Promise<ApiResult<UniversalFile>> => {
-  try {
-    // 1. 检查本地文件是否存在
-    const localExists = await localFileManager.userFileExists(fileName)
+  // 1. 检查本地文件是否存在
+  if (!fileName) {
+    return { isSuccess: false, msg: '[getUserFile] 文件名无效' }
+  }
+  const localExists = await localFileManager.userFileExists(fileName)
 
-    if (localExists) {
-      // 2. 本地存在，直接读取（依赖 localFileApi 的 ArrayBuffer 实现）
-      const localFile = await localFileManager.readUserFile(fileName, contentType)
-      return {
-        isSuccess: true,
-        data: localFile
-      }
-    }
-
-    // 3. 本地不存在，从 OSS 下载（依赖 aliyunOssApi 的 ArrayBuffer 实现）
-    const ossResult = await ossDownloadFile(fileName, localFileManager.getUserFileDir())
-    if (!ossResult.isSuccess || !ossResult.data) {
-      return {
-        isSuccess: false,
-        msg: ossResult.msg || '从 OSS 下载文件失败'
-      }
-    }
-
-    // 4. 下载成功后缓存到本地（依赖 localFileApi 的 ArrayBuffer 实现）
-    const cachedFile = await localFileManager.readUserFile(fileName, contentType)
+  if (localExists) {
+    const localFile = await localFileManager.readUserFile(fileName, contentType)
     return {
       isSuccess: true,
-      data: cachedFile
+      data: localFile
     }
-  } catch (error) {
+  } else {
     return {
       isSuccess: false,
-      msg: `获取文件失败: ${error instanceof Error ? error.message : String(error)}`
+      msg: '本地文件读取失败'
     }
   }
 }
 
 /**
- * 上传用户文件（同时上传到 OSS 和本地保存，双端同步）
- * @param file 待上传的文件（符合 UniversalFile 规范，content 为 null/ArrayBuffer/Base64/Text）
- * @returns 包含上传结果的 ApiResult
- */
-export const uploadUserFile = async (file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
-  try {
-    // 1. 校验入参（确保符合 UniversalFile 接口要求）
-    if (!file.fileName) throw new Error('文件名不能为空')
-    if (file.content === undefined && file.contentType !== null) {
-      throw new Error('文件内容不能为空（contentType 非 null 时）')
-    }
-
-    // 2. 先上传到 OSS
-    const ossResult = await ossUploadFile(file)
-    if (!ossResult.isSuccess || !ossResult.data) {
-      return {
-        isSuccess: false,
-        msg: ossResult.msg || '上传文件到 OSS 失败'
-      }
-    }
-
-    // 3. OSS 上传成功后，同步保存到本地
-    const localResult = await localFileManager.writeUserFile(ossResult.data)
-    return {
-      isSuccess: true,
-      data: localResult
-    }
-  } catch (error) {
-    return {
-      isSuccess: false,
-      msg: `上传文件失败: ${error instanceof Error ? error.message : String(error)}`
-    }
-  }
-}
-
-/**
- * 获取头像文件（优先本地读取，本地不存在则从 OSS 下载并缓存）
- * @param fileName 头像文件名（含扩展名）
- * @param contentType 期望返回的内容格式（null/ArrayBuffer/Base64，默认 Base64）
- * @returns 包含头像信息的 ApiResult
+ * 获取头像文件
  */
 export const getAvatar = async (
   fileName: string,
   contentType: null | 'ArrayBuffer' | 'Base64' = 'Base64'
 ): Promise<ApiResult<UniversalFile>> => {
   try {
-    // 检查本地头像是否存在
-    const localExists = await localFileManager.avatarExists(fileName)
-
+    // 1. 检查本地头像是否存在
+    if (!fileName) {
+      return { isSuccess: false, msg: '[getAvatar] 头像文件名不能为空' }
+    }
+    const localExists = await localAvatarManager.avatarExists(fileName)
     if (localExists) {
-      // 本地存在，直接读取（依赖 localFileApi 的 ArrayBuffer 实现）
-      const localAvatar = await localFileManager.readAvatar(fileName, contentType)
-      return {
-        isSuccess: true,
-        data: localAvatar
-      }
+      const localAvatar = await localAvatarManager.readAvatar(fileName, contentType)
+      return { isSuccess: true, data: localAvatar }
     }
 
-    // 本地不存在，从 OSS 下载（依赖 aliyunOssApi 的 ArrayBuffer 实现）
-    const ossResult = await ossDownloadAvatar(localFileManager.getAvatarDir())
-    if (!ossResult.isSuccess || !ossResult.data) {
+    // 2. 本地不存在，同步从OSS下载
+    const tokenApi = await getOssAvatarDownloadToken(fileName)
+    if (!tokenApi.isSuccess || !tokenApi.data) {
       return {
         isSuccess: false,
-        msg: ossResult.msg || '从 OSS 下载头像失败'
+        msg: '[getAvatar] OSS 令牌获取失败：' + (tokenApi.msg || '未知错误')
       }
     }
 
-    const cachedAvatar = await localFileManager.readAvatar(fileName, contentType)
-    return {
-      isSuccess: true,
-      data: cachedAvatar
+    // 头像小文件：空回调（不触发进度）
+    const onProgress = (): void => {}
+    const onError = (): void => {}
+
+    const avatarDir = localAvatarManager.getAvatarDir()
+    const ossResult = await ossDownload(tokenApi.data, avatarDir, onProgress, onError)
+
+    if (!ossResult.isSuccess) {
+      return {
+        isSuccess: false,
+        msg: '[getAvatar] OSS 头像下载失败：' + (ossResult.msg || '未知错误')
+      }
     }
+
+    // 3. 下载成功后返回
+    const cachedAvatar = await localAvatarManager.readAvatar(fileName, contentType)
+    return { isSuccess: true, data: cachedAvatar }
   } catch (error) {
-    return {
-      isSuccess: false,
-      msg: `获取头像失败: ${error instanceof Error ? error.message : String(error)}`
-    }
+    const msg = `获取头像失败: ${error instanceof Error ? error.message : String(error)}`
+    return { isSuccess: false, msg }
   }
 }
 
 /**
- * 上传头像文件（先压缩，再同步上传到 OSS 和本地）
- * @param file 待上传的原始头像文件（符合 UniversalFile 规范）
- * @returns 包含上传结果的 ApiResult
+ * 上传头像文件(头像文件需要content)
  */
 export const uploadAvatar = async (file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
   try {
-    // 1. 压缩图片（输入输出均为 ArrayBuffer 类型）
-    const compressedAvatar = await compressImage(file)
-    console.log(`头像压缩完成: ${compressedAvatar.fileName} (${compressedAvatar.fileSize} 字节)`)
+    // 1. 头像入参校验
+    if (!file?.fileName) throw new Error('[uploadAvatar] 头像文件名不能为空')
+    if (!file.content) throw new Error('[uploadAvatar] 头像内容不能为空')
+    if (file.mimeType && !file.mimeType.startsWith('image/')) {
+      throw new Error(`[uploadAvatar] 不支持的文件类型: ${file.mimeType}`)
+    }
 
-    // 2. 上传压缩后的头像到 OSS
-    const ossResult = await ossUploadAvatar(compressedAvatar)
-    if (!ossResult.isSuccess || !ossResult.data) {
+    // 2. 压缩图片
+    const compressedAvatar = await compressImage(file)
+    if (!compressedAvatar) {
+      throw new Error('[uploadAvatar] 图片压缩失败')
+    }
+
+    // 3. 获取上传令牌
+    const tokenApi = await postOssAvatarUploadToken({
+      name: compressedAvatar.fileName,
+      size: compressedAvatar.fileSize,
+      mimeType: compressedAvatar.mimeType,
+      fingerprint: compressedAvatar.fingerprint as string
+    })
+    if (!tokenApi.isSuccess || !tokenApi.data) {
       return {
         isSuccess: false,
-        msg: ossResult.msg || '上传头像到 OSS 失败'
+        msg: '[uploadAvatar] 头像上传令牌获取失败: ' + (tokenApi.msg || '未知错误')
       }
     }
 
-    // 3. 第三步：同步保存到本地（依赖 localFileApi 的 ArrayBuffer 实现）
-    const localResult = await localFileManager.writeAvatar(ossResult.data)
+    const token = tokenApi.data
+    const newFileName = token.name
+
+    // 4. 保存到本地头像目录
+    const avatarDir = localAvatarManager.getAvatarDir()
+    if (!avatarDir) {
+      return { isSuccess: false, msg: '[uploadAvatar] 头像目录未初始化' }
+    }
+    const localAvatar = await localAvatarManager.writeAvatar({
+      ...compressedAvatar,
+      fileName: newFileName
+    })
+
+    // 5. 处理OSS已存在的情况
+    if (token.exist) {
+      return { isSuccess: true, data: localAvatar }
+    }
+
+    // 6. 同步上传到OSS（无进度，失败不清理本地文件）
+    const localPath = path.join(avatarDir, newFileName)
+    // 空回调（不触发进度）
+    const onProgress = (): void => {}
+    const onError = (): void => {}
+
+    const ossResult = await ossUpload(token, localPath, onProgress, onError)
+    if (!ossResult.isSuccess) {
+      return {
+        isSuccess: false,
+        msg: '[uploadAvatar] OSS上传失败: ' + (ossResult.msg || '未知错误')
+      }
+    }
+
     return {
       isSuccess: true,
-      data: localResult
+      data: await localAvatarManager.readAvatar(newFileName, null)
     }
   } catch (error) {
-    return {
-      isSuccess: false,
-      msg: `上传头像失败: ${error instanceof Error ? error.message : String(error)}`
-    }
+    const msg = `上传头像失败: ${error instanceof Error ? error.message : String(error)}`
+    return { isSuccess: false, msg }
   }
 }
 
-/**
- * 计算文件指纹（使用SHA-256算法）
- * @param filePath 文件路径
- * @returns 文件指纹字符串
- */
-async function calculateFileFingerprint(filePath: string): Promise<string> {
-  try {
-    // 创建哈希实例
-    const hash = createHash('sha256')
-
-    // 打开文件流，避免一次性加载大文件到内存
-    const fileHandle = await fs.open(filePath, 'r')
-    const stream = fileHandle.createReadStream({ highWaterMark: 64 * 1024 }) // 64KB块
-
-    // 流式处理文件内容
-    for await (const chunk of stream) {
-      hash.update(chunk)
-    }
-
-    await fileHandle.close()
-
-    // 返回十六进制格式的哈希值
-    return hash.digest('hex')
-  } catch (error) {
-    console.error(`计算文件 ${filePath} 指纹失败:`, error)
-    // 出错时返回空字符串或特殊标识
-    return ''
-  }
-}
-
-export const getContentTypeFromMimeMap = (
-  specificMime: string,
-  mimeMap: MimeContentTypeMap
-): null | 'Base64' | 'Text' | 'ArrayBuffer' => {
-  // 直接用具体MIME作为key查询映射表
-  if (Object.prototype.hasOwnProperty.call(mimeMap, specificMime)) {
-    return mimeMap[specificMime] as null | 'Base64' | 'Text' | 'ArrayBuffer'
-  }
-  // 拆分MIME类型（格式：类型/子类型，如 "image/png" 拆分为 ["image", "png"]）
-  const mimeParts = specificMime.split('/')
-  // 仅当MIME格式合法（包含 "/" 且前缀非空）时，才尝试通配符匹配
-  if (mimeParts.length === 2 && mimeParts[0].trim()) {
-    const mimePrefix = mimeParts[0] // 提取前缀（如 "image"、"text"）
-    const wildcardKey = `${mimePrefix}/*` as keyof MimeContentTypeMap // 构造通配符key（如 "image/*"）
-    // 检查映射表是否存在该通配符key
-    if (Object.prototype.hasOwnProperty.call(mimeMap, wildcardKey)) {
-      return mimeMap[wildcardKey] as null | 'Base64' | 'Text' | 'ArrayBuffer'
-    }
-  }
-  // 无匹配时返回默认值（根据业务需求可调整为其他值）
-  return null
-}
-
-/**
- * 打开文件选择器（Electron 原生对话框）
- * @returns 包含选中文件列表的 ApiResult
- */
-export const openFileDialog = async (
-  contentTypeMap: MimeContentTypeMap
-): Promise<ApiResult<UniversalFile[]>> => {
-  try {
-    // 1. 获取当前聚焦窗口（作为对话框父窗口）
-    const parentWindow = BrowserWindow.getFocusedWindow()
-    if (!parentWindow) {
-      return {
-        isSuccess: false,
-        msg: '主窗口未打开，无法选择文件'
-      }
-    }
-
-    // 2. 配置文件选择对话框
-    const dialogOptions: OpenDialogOptions = {
-      title: '选择文件',
-      properties: ['openFile', 'multiSelections'] as const, // 支持多选
-      filters: [{ name: '所有文件', extensions: ['*'] }] // 允许所有文件类型
-    }
-
-    // 3. 打开对话框并获取用户选择结果
-    const { canceled, filePaths } = await dialog.showOpenDialog(parentWindow, dialogOptions)
-    if (canceled || filePaths.length === 0) {
-      return { isSuccess: true, data: [] } // 用户取消选择，返回空列表
-    }
-
-    // 4. 处理每个选中的文件，转换为 UniversalFile 格式
-    const universalFiles: UniversalFile[] = []
-    const CRITICAL = 100 * 1024 * 1024 // 100MB的字节数
-
-    for (const filePath of filePaths) {
-      try {
-        // 4.1 获取文件基本信息（大小、名称等）
-        const fileStats = await fs.stat(filePath)
-        const fileName = path.basename(filePath)
-        const mimeType: MIME = getMIMEFromFilename(fileName) || 'application/octet-stream'
-        const isLargeFile = fileStats.size > CRITICAL // 判断是否大于1GB
-
-        // 4.2 计算文件指纹
-        const fingerprint = await calculateFileFingerprint(filePath)
-        let contentType = getContentTypeFromMimeMap(mimeType, contentTypeMap)
-        contentType = isLargeFile ? null : contentType
-
-        // 4.3 构建基础文件信息
-        const baseFile: UniversalFile = {
-          fileName,
-          mimeType,
-          fileSize: fileStats.size,
-          localPath: filePath,
-          contentType: contentType,
-          content: undefined,
-          fingerprint
-        }
-
-        // 4.4 若需要读取内容且不是大文件，根据 contentType 转换格式
-        if (contentType !== null && !isLargeFile) {
-          // 先读取文件为 Buffer
-          const fileBuffer = await fs.readFile(filePath)
-
-          // 根据目标格式转换内容
-          switch (contentType) {
-            case 'ArrayBuffer':
-              // Buffer 转 ArrayBuffer
-              baseFile.content = fileBuffer.buffer.slice(
-                fileBuffer.byteOffset,
-                fileBuffer.byteOffset + fileBuffer.byteLength
-              ) as ArrayBuffer
-              break
-            case 'Text':
-              // Buffer 转 UTF8 字符串
-              baseFile.content = fileBuffer.toString('utf8')
-              break
-            case 'Base64':
-              // Buffer 转 Base64 字符串
-              baseFile.content = fileBuffer.toString('base64')
-              break
-          }
-        } else if (isLargeFile) {
-          // 大文件处理：明确设置content为null
-          baseFile.content = undefined
-        }
-
-        universalFiles.push(baseFile)
-      } catch (fileError) {
-        console.error(`处理文件 ${filePath} 失败:`, fileError)
-        // 单个文件处理失败不中断整体流程，仅跳过该文件
-      }
-    }
-
-    return { isSuccess: true, data: universalFiles }
-  } catch (error) {
-    return {
-      isSuccess: false,
-      msg: `打开文件选择器失败: ${error instanceof Error ? error.message : String(error)}`
-    }
-  }
-}
-
-const openImageWithSystemViewer = async (absolutePath): Promise<boolean> => {
-  try {
-    // 检查文件是否存在
-    await fs.access(absolutePath)
-
-    // 调用系统默认程序打开图片（会自动使用默认图片查看器）
-    const success = await shell.openPath(absolutePath)
-
-    if (success) {
-      console.log(`成功打开图片: ${absolutePath}`)
-      return true
-    } else {
-      console.error(`打开图片失败: 系统无法处理该请求`)
-      return false
-    }
-  } catch (error) {
-    console.error(`打开图片出错:`, error)
-    return false
-  }
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0') // 月份从0开始
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`
 }
 
 /**
@@ -429,7 +351,7 @@ export function registerFileManageIpcHandlers(): void {
       fileName: string,
       contentType: null | 'ArrayBuffer' | 'Base64' | 'Text'
     ): Promise<ApiResult<UniversalFile>> => {
-      return getUserFile(fileName, contentType)
+      return getUserFileFromLocal(fileName, contentType)
     }
   )
 
@@ -448,9 +370,16 @@ export function registerFileManageIpcHandlers(): void {
   // 上传用户文件
   ipcMain.handle(
     'uploadUserFile',
-    async (_event, file: UniversalFile): Promise<ApiResult<UniversalFile>> => {
-      console.log('ipcMain.handle.uploadUserFile')
-      return uploadUserFile(file)
+    async (
+      _event,
+      file: UniversalFile,
+      fromType: number,
+      fromSession?: string
+    ): Promise<ApiResult<void>> => {
+      // todo: 暂未实现
+      return {
+        isSuccess: false
+      }
     }
   )
 
@@ -470,9 +399,79 @@ export function registerFileManageIpcHandlers(): void {
     }
   )
 
-  // 打开文件选择器
+  // 打开图片查看器
   ipcMain.handle('openImageViewer', async (_event, fileName: string): Promise<void> => {
     const relPath = localFileManager.getUserFileDir()
     openImageWithSystemViewer(path.join(relPath, fileName))
+  })
+
+  // otherSaveFile
+  ipcMain.handle('otherSaveFile', async (_event, fileName: string): Promise<boolean> => {
+    try {
+      // 1. 获取源文件路径（你的原始图片路径）
+      const relPath = localFileManager.getUserFileDir()
+      const sourcePath = path.join(relPath, fileName) // 源路径
+      const extName = path.extname(fileName)
+
+      const newFileName = formatDate(new Date()) + extName
+      // 2. 检查源文件是否存在
+      if (!fs.existsSync(sourcePath)) {
+        console.error(`源文件不存在：${sourcePath}`)
+        return false
+      }
+
+      // 3. 打开文件选择器，让用户选择目标路径
+      const mainWindow = BrowserWindow.getFocusedWindow()
+      if (!mainWindow) return false
+
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: '另存为',
+        defaultPath: path.join(app.getPath('downloads'), newFileName) // 默认下载目录+文件名
+      })
+
+      if (result.canceled) return false
+      const targetPath = result.filePath // 用户选择的目标路径
+
+      // 4. 直接拷贝文件（异步方式，避免阻塞）
+      await fsPromises.copyFile(sourcePath, targetPath)
+      console.log(`文件拷贝成功：${sourcePath} -> ${targetPath}`)
+      return true
+    } catch (error) {
+      console.error('文件拷贝失败：', error)
+      return false
+    }
+  })
+
+  // openVideoPlayer
+  ipcMain.handle('openVideoPlayer', async (_event, fileName: string): Promise<boolean> => {
+    try {
+      // 1. 获取视频文件的完整路径
+      const relPath = localFileManager.getUserFileDir()
+      const filePath = path.join(relPath, fileName)
+
+      // 2. 检查文件是否存在（避免打开失败）
+      if (!fs.existsSync(filePath)) {
+        console.error(`文件不存在：${filePath}`)
+        return false
+      }
+
+      // 3. 调用系统默认程序打开视频（自动关联媒体播放器）
+      // shell.openPath() 会返回操作结果（Windows 可能返回空字符串表示成功）
+      const result = await shell.openPath(filePath)
+
+      // 判断是否成功（不同系统返回值略有差异）
+      const isSuccess = result === '' // Windows 成功返回空字符串
+      // macOS/Linux 成功返回 undefined 或空字符串，可统一判断
+      if (isSuccess) {
+        console.log(`已用系统播放器打开：${filePath}`)
+        return true
+      } else {
+        console.error(`打开失败：${result}`)
+        return false
+      }
+    } catch (error) {
+      console.error('打开视频播放器出错：', error)
+      return false
+    }
   })
 }

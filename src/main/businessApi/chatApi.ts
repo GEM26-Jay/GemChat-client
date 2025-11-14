@@ -7,14 +7,26 @@ import {
   ChatGroup,
   GroupMember,
   User,
-  MessageStatus
+  MessageStatus,
+  UniversalFile,
+  MessageType,
+  FileProgressEvent,
+  FileErrorEvent,
+  FileMapStatus,
+  FileMap
 } from '@shared/types'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { groupDB } from '../db-manage/db_group'
 import { CreateGroupDTO } from '@shared/DTO.types'
 import { postGroupAdd } from '../axios/axiosChatApi'
-import { nettyClients } from '../tcp-client/client'
+import { nettyClientManager } from '../tcp-client/client'
 import Protocol from '../tcp-client/protocol'
+import { downloadFileFromOss, saveFileToLocal, sendFileToOss } from '@main/file-manage/fileManage'
+import { generateUUID } from '@shared/utils'
+import { waitingAckContainer } from '@main/tcp-client/handlers/ackSchedule'
+import { notifyWindows } from '..'
+import { generateFileThumbnail, generateVideoThumbnail } from '@main/file-manage/fileUtils'
+import { fileMapDB } from '@main/db-manage/db_fileMap'
 
 export function registerChatApiIpcHandlers(): void {
   // chat-getSessions
@@ -64,7 +76,7 @@ export function registerChatApiIpcHandlers(): void {
   // chat-getSessionById
   ipcMain.handle(
     'chat-getSessionById',
-    async (event: IpcMainInvokeEvent, sessionId: string): Promise<ApiResult<ChatSession>> => {
+    async (_event: IpcMainInvokeEvent, sessionId: string): Promise<ApiResult<ChatSession>> => {
       const result = await chatSessionDB.getSessionById(sessionId)
       if (result) {
         return {
@@ -83,7 +95,7 @@ export function registerChatApiIpcHandlers(): void {
   ipcMain.handle(
     'chat-getMessagesBySessionId',
     async (
-      event: IpcMainInvokeEvent,
+      _event: IpcMainInvokeEvent,
       sessionId: string,
       page: number,
       pageSize: number
@@ -106,14 +118,14 @@ export function registerChatApiIpcHandlers(): void {
   ipcMain.handle(
     'chat-getMessagesBySessionIdUsingCursor',
     async (
-      event: IpcMainInvokeEvent,
+      _event: IpcMainInvokeEvent,
       sessionId: string,
-      ltMessageId: string,
+      maxTimestamp: number,
       size: number
     ): Promise<ApiResult<ChatMessage[]>> => {
       const result = await chatSessionDB.getMessagesBySessionIdUsingCursor(
         sessionId,
-        ltMessageId,
+        maxTimestamp,
         size
       )
       if (result) {
@@ -133,7 +145,7 @@ export function registerChatApiIpcHandlers(): void {
   ipcMain.handle(
     'chat-getGroupMemberByGroupIdAndUserId',
     async (
-      event: IpcMainInvokeEvent,
+      _event: IpcMainInvokeEvent,
       groupId: string,
       userId: string
     ): Promise<ApiResult<GroupMember>> => {
@@ -206,53 +218,203 @@ export function registerChatApiIpcHandlers(): void {
       }
     }
   )
-  // chat-sendMessage
+  // chat-sendText
   ipcMain.handle(
-    'chat-sendMessage',
+    'chat-sendText',
     async (
       _event: IpcMainInvokeEvent,
       sessionId: string,
-      type: number,
-      content: string,
-      timeStamp?: number
+      content: string
     ): Promise<ApiResult<ChatMessage>> => {
       const user = clientDataStore.get('user') as User
-      const time = timeStamp ? timeStamp : Date.now()
+      const time = Date.now()
+      const identityId = generateUUID()
       const tempMessage: ChatMessage = {
-        id: 0,
         sessionId,
-        messageId: `temp-${time}`, // 临时ID，确保唯一性
-        type: type,
         fromId: user.id,
-        toId: sessionId,
+        messageId: '0',
+        identityId: identityId,
+        type: MessageType.TEXT,
         content,
         status: MessageStatus.TYPE_SENDING,
         createdAt: time,
         updatedAt: time
       }
+      notifyWindows('message-send', tempMessage)
+      const waitingKey = tempMessage.sessionId + ':' + tempMessage.identityId
+      waitingAckContainer.set(waitingKey, tempMessage, 30000, () => {
+        tempMessage.status = MessageStatus.TYPE_FAILED
+        notifyWindows('message-ack-error', tempMessage)
+      })
       try {
         const protocol = new Protocol()
-        protocol.setFromId(BigInt(user.id))
-        protocol.setType(Protocol.ORDER_MESSAGE + type)
-        protocol.setMessage(content)
-        protocol.setToId(BigInt(sessionId))
-        protocol.setVersion(1)
-
-        protocol.setTimeStamp(BigInt(time))
-        const success = nettyClients[0].sendProtocol(protocol)
+        protocol.fromId = BigInt(user.id)
+        protocol.sessionId = BigInt(sessionId)
+        protocol.identityId = BigInt(identityId)
+        protocol.type = Protocol.ORDER_MESSAGE + Protocol.CONTENT_TEXT
+        protocol.setContent(content)
+        protocol.timeStamp = BigInt(time)
+        const success = nettyClientManager.sendProtocol(protocol)
         if (success) {
           return {
             isSuccess: true,
             data: tempMessage
           }
         } else {
+          tempMessage['status'] = MessageStatus.TYPE_FAILED
+          notifyWindows('message-ack-error', tempMessage)
           return {
-            isSuccess: false
+            isSuccess: false,
+            msg: `[IPC: chat-sendMessage]: 发送消息失败`,
+            data: tempMessage
           }
         }
       } catch (err) {
         tempMessage['status'] = MessageStatus.TYPE_FAILED
+        notifyWindows('message-ack-error', tempMessage)
         return { isSuccess: false, msg: `[IPC: chat-sendMessage]: ${err}`, data: tempMessage }
+      }
+    }
+  )
+
+  // chat-sendFile
+  ipcMain.handle(
+    'chat-sendFile',
+    async (
+      _event: IpcMainInvokeEvent,
+      sessionId: string,
+      file: UniversalFile
+    ): Promise<ApiResult<ChatMessage>> => {
+      const user = clientDataStore.get('user') as User
+      const time = Date.now()
+      const remoteName = file.fingerprint + file.fileName.slice(file.fileName.lastIndexOf('.'))
+      // 保存文件到本地
+      const localApi = await saveFileToLocal(file)
+      if (!localApi.isSuccess || !localApi.data) throw new Error('消息保存本地失败')
+
+      const oldMap = await fileMapDB.getBySessionAndFingerprint(
+        sessionId,
+        file.fingerprint as string
+      )
+      if (!oldMap || oldMap.status != FileMapStatus.SYNCED) {
+        // 存储数据库
+        const fileMap: FileMap = {
+          originName: file.fileName,
+          remoteName: remoteName,
+          fingerprint: file.fingerprint as string,
+          size: file.fileSize,
+          mimeType: file.mimeType,
+          location: file.localPath ? file.localPath : ' ',
+          status: FileMapStatus.WAIT_UPLOAD,
+          createdAt: time,
+          updatedAt: time,
+          sourceType: 0,
+          sessionId: sessionId,
+          sourceInfo: ' '
+        }
+        await fileMapDB.addOrUpdateBySessionAndFingerprint(fileMap)
+      }
+
+      // 发送消息（虚假）
+      const tempMessage: ChatMessage = {
+        fromId: user.id,
+        sessionId,
+        identityId: generateUUID(),
+        messageId: '0',
+        type: MessageType.OTHER_FILE,
+        content:
+          file.fileName.replace(':', '') + ':' + file.fingerprint + ':' + file.fileSize + ':',
+        status: MessageStatus.TYPE_SENDING,
+        createdAt: time,
+        updatedAt: time
+      }
+      if (file.mimeType.startsWith('image')) {
+        tempMessage.type = MessageType.IMAGE
+        const thumbnail = await generateFileThumbnail(file.localPath as string, 'Base64', 200)
+        tempMessage.content = tempMessage.content + thumbnail.content
+      } else if (file.mimeType.startsWith('video')) {
+        tempMessage.type = MessageType.VIDEO
+        const thumbnail = await generateVideoThumbnail(file.localPath as string, 'Base64', 200)
+        tempMessage.content =
+          tempMessage.content + (thumbnail ? (thumbnail?.content as string) : ' ')
+      }
+      notifyWindows('message-send', tempMessage)
+
+      const onProgress = async (value: number): Promise<void> => {
+        if (value >= 100) {
+          // 注册消息到等待队列
+          const waitingKey = tempMessage.sessionId + ':' + tempMessage.identityId
+          waitingAckContainer.set(waitingKey, tempMessage, 30000, () => {
+            tempMessage.status = MessageStatus.TYPE_FAILED
+            notifyWindows('message-ack-error', tempMessage)
+          })
+          // 发送消息到服务器
+          const protocol = new Protocol()
+          protocol.fromId = BigInt(tempMessage.fromId)
+          protocol.sessionId = BigInt(sessionId)
+          protocol.identityId = BigInt(tempMessage.identityId as string)
+          protocol.type = Protocol.ORDER_MESSAGE + tempMessage.type
+          protocol.setContent(tempMessage.content)
+          protocol.timeStamp = BigInt(tempMessage.createdAt)
+          nettyClientManager.sendProtocol(protocol)
+        }
+        // 给渲染进程通知进度
+        notifyWindows('file-ops-progress', {
+          taskId: file.fingerprint,
+          progress: value,
+          type: 'upload',
+          fileName: file.fileName
+        } as FileProgressEvent)
+      }
+      const onError = async (): Promise<void> => {
+        const waitingKey = tempMessage.sessionId + ':' + tempMessage.identityId
+        waitingAckContainer.delete(waitingKey)
+        tempMessage.status = MessageStatus.TYPE_FAILED
+        notifyWindows('message-ack-error', tempMessage)
+        // 给渲染进程通知进度
+        notifyWindows('file-ops-error', {
+          taskId: file.fingerprint,
+          type: 'upload',
+          fileName: file.fileName
+        } as FileErrorEvent)
+      }
+
+      sendFileToOss(localApi.data.fileName, 0, onProgress, onError, sessionId)
+      return {
+        isSuccess: true,
+        data: tempMessage
+      }
+    }
+  )
+
+  // chat-download
+  ipcMain.handle(
+    'chat-download',
+    async (_event: IpcMainInvokeEvent, fileName: string): Promise<ApiResult<void>> => {
+      const fingerprint = fileName.slice(0, fileName.lastIndexOf('.'))
+
+      const onProgress = async (value: number): Promise<void> => {
+        if (value >= 100) {
+          fileMapDB.updateStatusByFingerprint(FileMapStatus.SYNCED, fingerprint)
+        }
+        // 给渲染进程通知进度
+        notifyWindows('file-ops-progress', {
+          taskId: fingerprint,
+          progress: value,
+          type: 'download',
+          fileName: fileName
+        } as FileProgressEvent)
+      }
+      const onError = async (): Promise<void> => {
+        notifyWindows('file-ops-error', {
+          taskId: fingerprint,
+          type: 'download',
+          fileName: fileName
+        } as FileProgressEvent)
+      }
+      downloadFileFromOss(fileName, onProgress, onError)
+      return {
+        isSuccess: true
       }
     }
   )

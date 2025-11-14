@@ -19,7 +19,7 @@ import styles from './SendBox.module.css'
 import { useState, useRef, useEffect } from 'react'
 import { ApiResult, MessageType, MimeContentTypeMap, UniversalFile } from '@shared/types'
 import {
-  calculateFileFingerprint,
+  calculateFileFingerprintByContent,
   fileToBuffer,
   formatFileSize,
   getMIMEFromFilename,
@@ -34,47 +34,48 @@ interface AttachItem extends UniversalFile {
 // 组件Props
 interface SendBoxProps {
   sessionId: string
-  handleSendText: (sessionId: string, content: string) => Promise<void>
-  handleSendFile: (sessionId: string, file: UniversalFile) => Promise<void>
 }
 
 // 工具函数：根据MIME类型获取消息类型和显示图标
 const getFileMetaByMIME = (mimeType: MIME): { type: MessageType; icon: React.ReactNode } => {
   if (mimeType.startsWith('image/')) {
     return {
-      type: MessageType.TYPE_IMAGE,
+      type: MessageType.IMAGE,
       icon: <FaFileImage className={styles['preview-icon']} />
     }
   }
   if (mimeType.startsWith('video/')) {
     return {
-      type: MessageType.TYPE_VIDEO,
+      type: MessageType.VIDEO,
       icon: <FaFileVideo className={styles['preview-icon']} />
     }
   }
   if (mimeType.startsWith('audio/')) {
     return {
-      type: MessageType.TYPE_VOICE,
+      type: MessageType.AUDIO,
       icon: <FaFileAudio className={styles['preview-icon']} />
     }
   }
   switch (mimeType) {
     case 'application/pdf':
-      return { type: MessageType.TYPE_FILE, icon: <FaFilePdf className={styles['preview-icon']} /> }
+      return {
+        type: MessageType.OTHER_FILE,
+        icon: <FaFilePdf className={styles['preview-icon']} />
+      }
     case 'application/msword':
     case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       return {
-        type: MessageType.TYPE_FILE,
+        type: MessageType.OTHER_FILE,
         icon: <FaFileWord className={styles['preview-icon']} />
       }
     case 'application/vnd.ms-excel':
     case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
       return {
-        type: MessageType.TYPE_FILE,
+        type: MessageType.OTHER_FILE,
         icon: <FaFileExcel className={styles['preview-icon']} />
       }
     default:
-      return { type: MessageType.TYPE_FILE, icon: <FaFile className={styles['preview-icon']} /> }
+      return { type: MessageType.OTHER_FILE, icon: <FaFile className={styles['preview-icon']} /> }
   }
 }
 
@@ -86,11 +87,7 @@ const arrayBufferToDataUrl = (buffer: ArrayBuffer, mimeType: string = 'image/jpe
   return URL.createObjectURL(blob)
 }
 
-const SendBox: React.FC<SendBoxProps> = ({
-  sessionId,
-  handleSendText,
-  handleSendFile
-}: SendBoxProps) => {
+const SendBox: React.FC<SendBoxProps> = ({ sessionId }: SendBoxProps) => {
   const [text, setText] = useState('')
   const [attaches, setAttaches] = useState<AttachItem[]>([])
   const [isSendingText, setIsSendingText] = useState(false)
@@ -126,7 +123,7 @@ const SendBox: React.FC<SendBoxProps> = ({
               // 将文件转换为Buffer
               const fileBuffer = await fileToBuffer(file)
               // 计算文件指纹（忽略文件名）
-              const fileFingerprint = await calculateFileFingerprint(fileBuffer)
+              const fileFingerprint = await calculateFileFingerprintByContent(fileBuffer)
 
               const mimeType =
                 getMIMEFromFilename(file.name) || (file.type as MIME) || 'application/octet-stream'
@@ -245,15 +242,14 @@ const SendBox: React.FC<SendBoxProps> = ({
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { icon, ...universalFile } = attach
-      handleSendFile(sessionId, universalFile)
+      await window.businessApi.chat.sendFile(sessionId, universalFile)
     } catch (error) {
       console.error(error instanceof Error ? error.message : `文件 ${attach.fileName} 上传异常`)
     }
   }
 
-  // 批量上传待传文件
+  // 批量上传待传文件（todo: 存在BUG，无法多个文件同时上传）
   const uploadAllPendingFiles = async (): Promise<void> => {
-    console.log('attaches', attaches)
     for (const attach of attaches) {
       await uploadSingleFile(attach)
     }
@@ -268,7 +264,10 @@ const SendBox: React.FC<SendBoxProps> = ({
     if (trimmedText && !isSendingText) {
       setIsSendingText(true)
       try {
-        await handleSendText(sessionId, trimmedText)
+        const apiRe = await window.businessApi.chat.sendText(sessionId, trimmedText)
+        if (!apiRe.isSuccess) {
+          alert(apiRe.msg)
+        }
       } catch (error) {
         alert(`文本发送异常：${error instanceof Error ? error.message : '未知错误'}`)
       } finally {

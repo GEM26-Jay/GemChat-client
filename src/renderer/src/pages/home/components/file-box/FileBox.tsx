@@ -3,9 +3,40 @@ import { FaSearch } from 'react-icons/fa'
 import styles from './FileBox.module.css'
 import { FileMap } from '@shared/types'
 import FileBoxItem from './FileBoxItem'
+import { MIME } from '@shared/utils'
 
 // 定义文件分类类型
-type FileCategory = 'all' | 'image' | 'video' | 'audio' | 'other'
+type FileCategory = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other'
+
+const isDocument = (mimeType: MIME): boolean => {
+  // 文本类文档（text/开头）
+  if (mimeType.startsWith('text/')) return true
+  // PDF
+  if (mimeType === 'application/pdf') return true
+  // Word 系列
+  if (
+    mimeType === 'application/msword' ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  )
+    return true
+  // Excel 系列
+  if (
+    mimeType === 'application/vnd.ms-excel' ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  )
+    return true
+  // PPT 系列
+  if (
+    mimeType === 'application/vnd.ms-powerpoint' ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  )
+    return true
+  return false
+}
+
+const isImage = (mimeType: MIME): boolean => mimeType.startsWith('image/')
+const isVideo = (mimeType: MIME): boolean => mimeType.startsWith('video/')
+const isAudio = (mimeType: MIME): boolean => mimeType.startsWith('audio/')
 
 const FileBox: React.FC = () => {
   const [files, setFiles] = useState<FileMap[]>([])
@@ -18,7 +49,7 @@ const FileBox: React.FC = () => {
   const fetchFiles = async (): Promise<void> => {
     try {
       setLoading(true)
-      const filesApi = await window.businessApi.file.getAll()
+      const filesApi = await window.businessApi.file.getAllSynced()
       if (!filesApi.isSuccess || !filesApi.data) throw new Error('Failed to fetch files')
       const data: FileMap[] = filesApi.data
       setFiles(data)
@@ -39,20 +70,20 @@ const FileBox: React.FC = () => {
   // 过滤文件
   const filteredFiles = files.filter((file) => {
     // 搜索过滤
-    const matchesSearch =
-      file.originName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.sourceInfo.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = file.originName.toLowerCase().includes(searchTerm.toLowerCase())
 
     // 分类过滤
     const matchesCategory =
       activeCategory === 'all' ||
-      (activeCategory === 'image' && file.mimeType.startsWith('image/')) ||
-      (activeCategory === 'video' && file.mimeType.startsWith('video/')) ||
-      (activeCategory === 'audio' && file.mimeType.startsWith('audio/')) ||
+      (activeCategory === 'document' && isDocument(file.mimeType as MIME)) ||
+      (activeCategory === 'image' && isImage(file.mimeType as MIME)) ||
+      (activeCategory === 'video' && isVideo(file.mimeType as MIME)) ||
+      (activeCategory === 'audio' && isAudio(file.mimeType as MIME)) ||
       (activeCategory === 'other' &&
-        !file.mimeType.startsWith('image/') &&
-        !file.mimeType.startsWith('video/') &&
-        !file.mimeType.startsWith('audio/'))
+        !isImage(file.mimeType as MIME) &&
+        !isVideo(file.mimeType as MIME) &&
+        !isAudio(file.mimeType as MIME) &&
+        !isDocument(file.mimeType as MIME))
 
     return matchesSearch && matchesCategory
   })
@@ -88,6 +119,12 @@ const FileBox: React.FC = () => {
               图片
             </li>
             <li
+              className={activeCategory === 'document' ? styles['active'] : ''}
+              onClick={() => setActiveCategory('document')}
+            >
+              文档
+            </li>
+            <li
               className={activeCategory === 'video' ? styles['active'] : ''}
               onClick={() => setActiveCategory('video')}
             >
@@ -97,7 +134,7 @@ const FileBox: React.FC = () => {
               className={activeCategory === 'audio' ? styles['active'] : ''}
               onClick={() => setActiveCategory('audio')}
             >
-              音乐
+              音频
             </li>
             <li
               className={activeCategory === 'other' ? styles['active'] : ''}

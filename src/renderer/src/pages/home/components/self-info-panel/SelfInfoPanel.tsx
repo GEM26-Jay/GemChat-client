@@ -9,10 +9,10 @@ import {
   FaTimes,
   FaEllipsisV,
   FaSpinner,
-  FaGenderless,
   FaUserCheck,
   FaUserSlash,
-  FaSnowflake
+  FaSnowflake,
+  FaTransgender
 } from 'react-icons/fa'
 import styles from './SelfInfoPanel.module.css'
 import { User } from '@shared/types'
@@ -271,7 +271,7 @@ const UserProfile: React.FC = () => {
             {/* 性别 */}
             <div className={styles.detailItem}>
               <div className={styles.detailLabel}>
-                <FaGenderless className={styles.detailIcon} />
+                <FaTransgender className={styles.detailIcon} />
                 <span>性别</span>
               </div>
               <div className={styles.detailValue}>

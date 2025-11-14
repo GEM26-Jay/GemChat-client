@@ -10,7 +10,8 @@ import {
   ChatGroup,
   GroupMember,
   User,
-  UserFriend
+  UserFriend,
+  MessageType
 } from '@shared/types'
 import { userFriendDB } from '../../db-manage/db_friends'
 import {
@@ -22,7 +23,7 @@ import {
 } from '../../axios/axiosChatApi'
 import { chatSessionDB } from '../../db-manage/db_chatSession'
 import { groupDB } from '../../db-manage/db_group'
-import { saveMessage } from './messageHandler'
+import { saveFileMessage } from './messageHandler'
 
 export const handleFriendRequestSync = async (): Promise<void> => {
   const user = clientDataStore.get('user') as User
@@ -146,7 +147,14 @@ export const handleChatMessageSync = async (): Promise<void> => {
   if (apiResult.isSuccess) {
     if (apiResult.data) {
       for (const item of apiResult.data) {
-        saveMessage(item)
+        await chatSessionDB.addOrUpdateMessage(item)
+        if (
+          item.type === MessageType.IMAGE ||
+          item.type === MessageType.VIDEO ||
+          item.type === MessageType.OTHER_FILE
+        ) {
+          await saveFileMessage(item)
+        }
       }
       notifyWindows('update', 'chat_message')
       notifyWindows('update', 'chat_session')

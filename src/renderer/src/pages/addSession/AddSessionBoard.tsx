@@ -122,8 +122,9 @@ const AddSessionBoard: React.FC = () => {
       }
     } else {
       let fullName = selectedFriends.map((item) => item.username).join(',')
-      const user = window.clientData.get("user") as User
-      fullName = user.username + fullName
+      const user = (await window.clientData.get("user")) as User
+      
+      fullName = user.username + "," + fullName
       const groupName = fullName.length > 50 ? `${fullName.slice(0, 50)}...` : fullName
 
       const apiResult = await window.businessApi.chat.createGroup({

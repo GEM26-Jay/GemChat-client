@@ -11,4 +11,7 @@ export interface FileUploadDTO {
   mimeType: MIME
   fingerprint: string
   path?: string
+  fromType?: number
+  fromSession?: string
+  fromInfo?: string
 }

@@ -1,0 +1,240 @@
+/* 外层容器：控制整体对齐方向 */
+.media-container-mine,
+.media-container-others {
+  max-width: 100%;
+  display: flex;
+  padding: 6px 0;
+}
+
+/* 自己的消息：靠右对齐 */
+.media-container-mine {
+  justify-content: flex-end;
+}
+
+/* 他人的消息：靠左对齐 */
+.media-container-others {
+  justify-content: flex-start;
+}
+
+/* 文件容器基础样式 */
+.content-file-wrapper-mine,
+.content-file-wrapper-others {
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative; /* 为进度遮罩提供定位上下文 */
+}
+
+/* 自己的消息容器样式 */
+.content-file-wrapper-mine {
+  background-color: #1e3a5f;
+  border: 1px solid #3a5f8f;
+}
+
+/* 他人的消息容器样式 */
+.content-file-wrapper-others {
+  background-color: #1e1e1e;
+  border: 1px solid #6d7d93;
+}
+
+/* 容器 hover 效果 */
+.content-file-wrapper-mine:hover {
+  background-color: #254570;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.content-file-wrapper-others:hover {
+  background-color: #252525;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 图标容器 */
+.content-icon {
+  color: #64b5f6;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+/* 进度状态下的图标高亮 */
+.icon-active {
+  background-color: rgba(7, 193, 96, 0.2);
+  color: #07c160;
+  transform: scale(1.05);
+}
+
+/* 图标样式 */
+.preview-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 32px;
+  transition: color 0.3s ease;
+}
+
+/* 文件信息容器 */
+.file-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* 文件名样式（支持换行） */
+.content-file-name {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4; /* 行高确保换行后间距舒适 */
+  white-space: normal; /* 允许自动换行（关键属性） */
+  overflow: visible; /* 取消溢出隐藏，允许内容完整显示 */
+  text-overflow: clip; /* 溢出时不显示省略号 */
+  max-width: 100%; /* 最大宽度限制为父容器宽度，避免内容溢出容器 */
+  word-break: break-all; /* 当单词过长时强制截断换行（可选，根据需求决定） */
+  -webkit-box-orient: vertical;
+}
+
+/* 文件大小样式 */
+.content-file-size {
+  color: #9e9e9e;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 下载/打开/重试按钮基础样式 */
+.download-button,
+.open-button,
+.retry-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  align-self: flex-start;
+  z-index: 2;
+  position: relative;
+}
+
+/* 下载按钮 */
+.download-button {
+  background-color: #07c160;
+  color: #fff;
+}
+
+.download-button:hover {
+  background-color: #06a852;
+}
+
+/* 打开按钮 */
+.open-button {
+  background-color: #2196f3;
+  color: #fff;
+}
+
+.open-button:hover {
+  background-color: #0b7dda;
+}
+
+/* 重试按钮 */
+.retry-button {
+  background-color: #ff9800;
+  color: #fff;
+}
+
+.retry-button:hover {
+  background-color: #e68900;
+}
+
+/* 进度条容器 - 新增渐变遮罩支持 */
+.file-progress-container {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 4px;
+}
+
+/* 进度遮罩层 - 横向渐变区分已完成/未完成 */
+.progress-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: background 0.3s ease;
+  z-index: 1;
+}
+
+/* 进度条 - 优化颜色和过渡 */
+.file-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #07c160 0%, #06a852 100%);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+  box-shadow: 0 0 4px rgba(7, 193, 96, 0.4);
+}
+
+/* 进度百分比文本 - 优化位置和样式 */
+.progress-text {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 2;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+/* 错误信息容器 */
+.file-error-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  z-index: 2;
+  position: relative;
+}
+
+/* 错误文本 */
+.error-text {
+  color: #ff4d4f;
+  font-size: 12px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 进度状态下的文件名高亮 */
+.content-file-wrapper-mine .content-file-name {
+  transition: color 0.3s ease;
+}
+.content-file-wrapper-others .content-file-name {
+  transition: color 0.3s ease;
+}
+
+.is-uploading .content-file-name,
+.is-downloading .content-file-name {
+  color: #07c160;
+}

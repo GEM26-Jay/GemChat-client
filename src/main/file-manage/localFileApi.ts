@@ -4,19 +4,17 @@ import fsPromises from 'fs/promises'
 import { constants } from 'fs'
 import { UniversalFile } from '@shared/types'
 import { getMIMEFromFilename, MIME } from '@shared/utils'
+import { calculateFileFingerprintWithoutLoad } from './fileUtils'
 
 export class LocalFileManager {
-  // 存储目录路径
-  public readonly avatarDir: string
-  public userFileDir: string | null = null
+  // 用户文件目录
+  private userFileDir: string | null = null
 
   // 单例实例
   private static instance: LocalFileManager
 
-  // 私有构造函数，确保单例
   private constructor() {
-    // 初始化头像共享目录
-    this.avatarDir = path.join(app.getPath('userData'), 'Local Storage', 'FileStorage', 'avatars')
+    // 私有构造函数，确保单例
   }
 
   // 获取单例实例
@@ -28,15 +26,9 @@ export class LocalFileManager {
   }
 
   /**
-   * 初始化存储目录
-   * 确保头像目录和用户文件目录存在
+   * 初始化用户文件目录
    */
   public async initialize(userId: string): Promise<void> {
-    // 初始化头像目录
-    await this.ensureDirectoryExists(this.avatarDir)
-    console.log(`[LocalFileManager]: 头像存储目录已准备就绪: ${this.avatarDir}`)
-
-    // 初始化用户文件目录
     this.userFileDir = path.join(
       app.getPath('userData'),
       'Local Storage',
@@ -203,166 +195,73 @@ export class LocalFileManager {
     // 获取文件基本信息
     const stats = await fsPromises.stat(filePath)
     const mimeType: MIME = getMIMEFromFilename(fileName) || 'application/octet-stream'
+    const fingerprint = await calculateFileFingerprintWithoutLoad(filePath)
 
-    // 不读取内容的情况
-    if (contentType === null) {
-      return {
-        fileName,
-        mimeType,
-        fileSize: stats.size,
-        content: undefined,
-        contentType: null,
-        localPath: filePath
-      }
-    }
-
-    // 读取文件内容
-    const buffer = await fsPromises.readFile(filePath)
-    let content: string | ArrayBuffer
-
-    // 根据目标contentType处理内容
-    switch (contentType) {
-      case 'Text':
-        content = buffer.toString('utf8')
-        break
-      case 'Base64':
-        content = buffer.toString('base64')
-        break
-      case 'ArrayBuffer':
-        content = this.bufferToArrayBuffer(buffer)
-        break
-      default:
-        throw new Error(`不支持的contentType: ${contentType}`)
-    }
-
-    return {
+    const re = {
       fileName,
       mimeType,
       fileSize: stats.size,
-      content,
-      contentType,
-      localPath: filePath
-    }
-  }
+      content: null,
+      contentType: contentType,
+      localPath: filePath,
+      fingerprint: fingerprint
+    } as UniversalFile
 
-  /**
-   * 保存头像文件
-   */
-  public async writeAvatar(file: UniversalFile): Promise<UniversalFile> {
-    // 参数校验
-    if (!file.fileName) {
-      throw new Error('文件名不能为空')
-    }
-    if (file.content === undefined && file.contentType !== null) {
-      throw new Error('文件内容不能为空（contentType非null时）')
-    }
-    if (!file.mimeType) {
-      throw new Error('文件MIME类型不能为空')
-    }
+    if (contentType != null) {
+      // 读取文件内容
+      const buffer = await fsPromises.readFile(filePath)
 
-    // 路径处理
-    const destFilePath = path.join(this.avatarDir, file.fileName)
-    const destDir = path.dirname(destFilePath)
-
-    // 确保目录存在
-    await this.ensureDirectoryExists(destDir)
-
-    try {
-      let writeContent: Buffer
-
-      // 根据contentType处理内容
-      switch (file.contentType) {
+      // 根据目标contentType处理内容
+      switch (contentType) {
+        case 'Text':
+          re.content = buffer.toString('utf8')
+          break
         case 'Base64':
-          if (typeof file.content !== 'string') {
-            throw new Error('contentType为Base64时，content必须是string')
-          }
-          writeContent = Buffer.from(file.content, 'base64')
+          re.content = buffer.toString('base64')
           break
-
         case 'ArrayBuffer':
-          if (!(file.content instanceof ArrayBuffer)) {
-            throw new Error('contentType为ArrayBuffer时，content必须是ArrayBuffer')
-          }
-          writeContent = this.arrayBufferToBuffer(file.content)
+          re.content = this.bufferToArrayBuffer(buffer)
           break
-
         default:
-          throw new Error(`未处理的contentType: ${file.contentType}`)
+          throw new Error(`不支持的contentType: ${contentType}`)
       }
-
-      // 写入文件
-      await fsPromises.writeFile(destFilePath, writeContent)
-
-      // 获取文件信息
-      const fileStats = await fsPromises.stat(destFilePath)
-
-      // 返回更新后的文件对象
-      return {
-        ...file,
-        fileSize: fileStats.size,
-        localPath: destFilePath,
-        contentType: file.contentType
-      }
-    } catch (err) {
-      console.error(`[LocalFileManager]: 保存头像文件失败: ${(err as Error).message}`)
-      throw new Error(`保存头像失败: ${(err as Error).message}`)
     }
+
+    return re
   }
 
   /**
-   * 读取头像文件
+   * 删除本地用户文件
+   * @param fileName 要删除的文件名（含扩展名）
+   * @returns Promise<void>
    */
-  public async readAvatar(
-    fileName: string,
-    contentType: null | 'Base64' | 'ArrayBuffer'
-  ): Promise<UniversalFile> {
-    const avatarPath = path.join(this.avatarDir, fileName)
+  public async removeUserFile(fileName: string): Promise<void> {
+    // 1. 验证目录是否初始化
+    this.validateUserDir()
 
-    // 检查文件是否存在
+    // 2. 构建文件完整路径
+    const filePath = path.join(this.userFileDir as string, fileName)
+
+    // 3. 检查文件是否存在
     try {
-      await fsPromises.access(avatarPath, constants.F_OK)
+      await this.userFileExists(fileName)
     } catch {
-      throw new Error(`头像文件不存在: ${avatarPath}`)
+      throw new Error(`[LocalFileManager] 文件不存在：${fileName}`)
     }
 
-    // 获取文件基本信息
-    const stats = await fsPromises.stat(avatarPath)
-    const mimeType: MIME = 'image/jpeg' as MIME
-
-    // 不读取内容的情况
-    if (contentType === null) {
-      return {
-        fileName,
-        mimeType,
-        fileSize: stats.size,
-        content: undefined,
-        contentType: null,
-        localPath: avatarPath
-      }
+    // 4. 检查是否为文件（避免删除目录）
+    const stats = await fsPromises.stat(filePath)
+    if (!stats.isFile()) {
+      throw new Error(`[LocalFileManager] 路径不是文件：${filePath}`)
     }
 
-    // 读取文件内容
-    const buffer = await fsPromises.readFile(avatarPath)
-    let content: string | ArrayBuffer
-
-    switch (contentType) {
-      case 'Base64':
-        content = buffer.toString('base64')
-        break
-      case 'ArrayBuffer':
-        content = this.bufferToArrayBuffer(buffer)
-        break
-      default:
-        throw new Error(`不支持的contentType: ${contentType}`)
-    }
-
-    return {
-      fileName,
-      mimeType,
-      fileSize: stats.size,
-      content,
-      contentType,
-      localPath: avatarPath
+    // 5. 执行删除操作
+    try {
+      await fsPromises.unlink(filePath)
+      console.log(`[LocalFileManager] 文件已删除：${filePath}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`[LocalFileManager] 删除文件失败：${message}`)
     }
   }
 
@@ -381,30 +280,10 @@ export class LocalFileManager {
   }
 
   /**
-   * 检查头像文件是否存在
-   */
-  public async avatarExists(fileName: string): Promise<boolean> {
-    const avatarPath = path.join(this.avatarDir, fileName)
-    try {
-      await fsPromises.access(avatarPath, constants.F_OK)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  /**
    * 获取用户文件目录
    */
   public getUserFileDir(): string {
     return this.userFileDir as string
-  }
-
-  /**
-   * 获取头像目录
-   */
-  public getAvatarDir(): string {
-    return this.avatarDir
   }
 
   /**
@@ -423,4 +302,5 @@ export class LocalFileManager {
 }
 
 // 导出单例实例
-export const localFileManager = LocalFileManager.getInstance()
+const localFileManager = LocalFileManager.getInstance()
+export default localFileManager

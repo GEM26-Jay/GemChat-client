@@ -37,13 +37,27 @@ const getIconByMIME = (mimeType: string): React.ReactNode => {
   }
 }
 
+const handleOpenImage = async (name: string): Promise<void> => {
+  window.fileManager.openImageViewer(name)
+}
+
 const FileBoxItem: React.FC<{ file: FileMap }> = ({ file }: { file: FileMap }) => {
-  console.log(file)
   return (
     <div className={styles['file-box-item-wrapper']}>
-      <div className={styles['file-icon']}>
+      <div
+        className={styles['file-icon']}
+        onClick={() => {
+          if (file.mimeType.startsWith('image/')) {
+            handleOpenImage(file.remoteName)
+          }
+        }}
+      >
         {file.mimeType.startsWith('image/') ? (
-          <LocalImage fileName={file.remoteName} option={'image'}  className={styles['image-preview']}></LocalImage>
+          <LocalImage
+            fileName={file.remoteName}
+            option={'image'}
+            className={styles['image-preview']}
+          ></LocalImage>
         ) : (
           getIconByMIME(file.mimeType)
         )}
@@ -53,6 +67,7 @@ const FileBoxItem: React.FC<{ file: FileMap }> = ({ file }: { file: FileMap }) =
           {file.originName}
         </div>
         <div className={styles['file-source']}>{file.sourceInfo}</div>
+        {/* <div className={styles['file-source']}>{file.mimeType}</div> */}
       </div>
       <div className={styles['file-info']}>
         <div className={styles['file-time']}>{formatDate(file.updatedAt)}</div>

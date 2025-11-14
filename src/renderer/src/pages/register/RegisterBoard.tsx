@@ -50,6 +50,12 @@ const RegisterPage: React.FC = () => {
       newErrors.username = '用户名长度需在3-20字符之间'
     }
 
+    // 用户头像是否上传
+    if (avatar == null) {
+      alert('用户头像不能为空')
+      return false
+    }
+
     // 密码验证
     if (!formData.password) {
       newErrors.password = '密码不能为空'
@@ -90,7 +96,6 @@ const RegisterPage: React.FC = () => {
       let data = {
         ...formData
       }
-      // todo: 存在风险
       if (avatar) {
         const uploadResult = await window.fileManager.uploadAvatar(avatar)
         if (uploadResult.isSuccess && uploadResult.data) {
@@ -151,7 +156,7 @@ const RegisterPage: React.FC = () => {
         }
       }
     } else {
-      alert('未知异常: 打开文件选择器失败')
+      alert(`头像上传失败：${result.msg}`)
     }
   }
 

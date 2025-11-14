@@ -98,7 +98,13 @@ const FriendRequestItem: React.FC<FriendRequestItemProps> = ({
         </span>
         {needDeal ? (
           <div className={styles['BoxList-li-button']}>
-            <button className={styles['BoxList-li-passedBtn']} onClick={() => onAccept(item)}>
+            <button
+              className={styles['BoxList-li-passedBtn']}
+              onClick={() => {
+                item.toRemark = user.username
+                onAccept(item)
+              }}
+            >
               通过
             </button>
             <button className={styles['BoxList-li-refuseBtn']} onClick={() => onReject(item)}>

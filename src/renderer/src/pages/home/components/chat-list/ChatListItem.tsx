@@ -126,7 +126,7 @@ const ChatListItem: React.FC<{ chatSession: ChatSession; user: User }> = ({
           <span className={styles['chat-time']}>{time ? formatRelativeTime(time) : <br></br>}</span>
         </div>
         <p className={styles['chat-last-message']}>
-          {lastMessage} <br></br>
+          {lastMessage?.split(':')[0]} <br></br>
         </p>
       </div>
     </div>

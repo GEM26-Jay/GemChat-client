@@ -21,8 +21,7 @@ export interface ChatMessageRow {
   message_id: string
   type: number
   from_id: string // 用户ID
-  to_id: string // 用户ID/群组ID
-  content: string | null
+  content: string
   status: number
   reply_to_id: string | null // 消息ID
   created_at: number
@@ -39,10 +38,10 @@ const convertChatSessionRow2ChatSession = async (
 ): Promise<ChatSession> => {
   // 关联查询该会话的最后一条有效消息
   const lastMessage = await db.get<ChatMessageRow>(
-    `SELECT message_id, content, created_at 
+    `SELECT * 
      FROM chat_message 
      WHERE session_id = ? AND status != ? 
-     ORDER BY created_at DESC 
+     ORDER BY updated_at DESC 
      LIMIT 1`,
     [data.id, MessageStatus.TYPE_DELETED]
   )
@@ -56,9 +55,9 @@ const convertChatSessionRow2ChatSession = async (
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     // 从关联查询结果中补充字段，无消息则用默认值
-    lastMessageId: lastMessage?.message_id || '',
-    lastMessageContent: lastMessage?.content || '',
-    lastMessageTime: lastMessage?.created_at || 0
+    lastMessageId: lastMessage?.message_id || null,
+    lastMessageContent: lastMessage?.content || null,
+    lastMessageTime: lastMessage?.updated_at || null
   }
 }
 
@@ -69,7 +68,6 @@ const convertChatMessageRow2ChatMessage = (data: ChatMessageRow): ChatMessage =>
     messageId: data.message_id,
     type: data.type,
     fromId: data.from_id,
-    toId: data.to_id,
     content: data.content,
     status: data.status,
     replyToId: data.reply_to_id,
@@ -110,7 +108,7 @@ class ChatSessionDB {
   }
 
   /**
-   * 根据用户ID获取所有会话（单聊）- 批量关联查询优化版
+   * 根据用户ID获取所有会话（单聊）- 批量关联查询
    */
   async getSingleSessionsByUserId(userId: string): Promise<ChatSession[]> {
     const db = await this.ensureDb()
@@ -396,17 +394,17 @@ class ChatSessionDB {
    */
   async getMessagesBySessionIdUsingCursor(
     sessionId: string,
-    ltMessageId: string,
+    maxTimestamp: number,
     size: number
   ): Promise<ChatMessage[]> {
     const db = await this.ensureDb()
     const rows = await db.all<ChatMessageRow[]>(
       `SELECT * FROM chat_message
        WHERE session_id = ? AND status != ? 
-       AND CAST(message_id AS BIGINT) < ?
-       ORDER BY CAST(message_id AS BIGINT) DESC
+       AND updated_at < ?
+       ORDER BY updated_at DESC
        LIMIT ?`,
-      [sessionId, MessageStatus.TYPE_DELETED, ltMessageId, size]
+      [sessionId, MessageStatus.TYPE_DELETED, maxTimestamp, size]
     )
     return rows.map(convertChatMessageRow2ChatMessage)
   }
@@ -435,20 +433,19 @@ class ChatSessionDB {
     const db = await this.ensureDb()
     const existingMessage = await this.getMessagesBySessionIdAndMessageId(
       message.sessionId,
-      message.messageId
+      message.messageId as string
     )
 
     if (existingMessage) {
       // 存在则更新消息
       await db.run(
         `UPDATE chat_message SET 
-          type = ?, from_id = ?, to_id = ?, content = ?, 
+          type = ?, from_id = ?, content = ?, 
           status = ?, reply_to_id = ?, updated_at = ? 
         WHERE session_id = ? and message_id = ?`,
         [
           message.type,
           message.fromId,
-          message.toId,
           message.content,
           message.status,
           message.replyToId,
@@ -461,15 +458,14 @@ class ChatSessionDB {
       // 不存在则插入消息，并更新会话的更新时间
       await db.run(
         `INSERT INTO chat_message (
-          session_id, message_id, type, from_id, to_id, content, status, 
+          session_id, message_id, type, from_id, content, status, 
           reply_to_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           message.sessionId,
           message.messageId,
           message.type,
           message.fromId,
-          message.toId,
           message.content,
           message.status,
           message.replyToId,

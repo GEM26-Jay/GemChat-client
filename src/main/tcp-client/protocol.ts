@@ -1,166 +1,100 @@
 import { Buffer } from 'buffer'
 
 /**
- * Custom protocol class for network communication data encapsulation and parsing
+ * 自定义协议类（与后端同步），用于网络通信的数据封装与解析
  */
 export default class Protocol {
-  // 命令类型常量（高16位）
-  public static readonly ORDER_SYSTEM_PUSH = 1 << 16 // 系统推送
-  public static readonly ORDER_AUTH = 2 << 16 // 认证
-  public static readonly ORDER_SYNC = 3 << 16 // 同步信号
-  public static readonly ORDER_HEART_BEAT = 4 << 16 // 心跳
-  public static readonly ORDER_MESSAGE = 5 << 16 // 消息转发
+  // 命令类型常量（高16位）- 与后端同步
+  public static readonly ORDER_SYSTEM = 1 << 16 // 系统推送
+  public static readonly ORDER_AUTH = 2 << 16 // 认证命令
+  public static readonly ORDER_SYNC = 3 << 16 // 同步命令
+  public static readonly ORDER_MESSAGE = 4 << 16 // 消息命令
+  public static readonly ORDER_ACK = 5 << 16 // 消息响应
 
-  // 内容类型（低16位）
-  public static readonly CONTENT_FAILED_INFO = -1 // 发送失败响应
-  public static readonly CONTENT_TEXT = 1 // 文本消息
+  // 内容类型（低16位）- 与后端同步
+  public static readonly CONTENT_FAILED = -1 // 失败响应
+  public static readonly CONTENT_EMPTY = 0 // 空消息(无意义)
+  public static readonly CONTENT_TEXT = 1 // 字符串文本
   public static readonly CONTENT_IMAGE = 2 // 图片消息
-  public static readonly CONTENT_FILE = 3 // 文件消息
-  public static readonly CONTENT_VOICE = 4 // 语音消息
-  public static readonly CONTENT_VIDEO = 5 // 视频消息
+  public static readonly CONTENT_AUDIO = 3 // 语音消息
+  public static readonly CONTENT_VIDEO = 4 // 视频消息
+  public static readonly CONTENT_OTHER_FILE = 5 // 其他文件类型
   public static readonly CONTENT_LOCATION = 6 // 位置消息
-  public static readonly CONTENT_ACK = 99 // 消息响应
 
+  public static readonly LENGTH_FIELD_BIAS = 48
 
-  // Protocol magic number (2 bytes, for packet validation)
+  // 协议魔数（2字节，与后端保持一致）
   public static readonly MAGIC_NUMBER = 0xbabe
 
-  // Protocol version (2 bytes), default 1
-  private version: number = 1
-  // Message command type (高16位命令类型 + 低16位内容类型, 4 bytes)
-  private type: number = 0
-  // Sender ID (8 bytes)
-  private fromId: bigint = 0n
-  // Receiver ID (8 bytes)
-  private toId: bigint = 0n
-  // 唯一标识符
-  private identityId: bigint = 0n
-  // Timestamp (8 bytes)
-  private timeStamp: bigint = 0n
-  // Message body length (2 bytes)
-  private length: number = 0
-  // Message body content (UTF-8 encoded bytes)
-  private message: Buffer = Buffer.alloc(0)
+  // 协议字段（与后端字段名完全同步）
+  version: number = 1 // 版本号（2字节）
+  type: number = 0 // 类型（4字节：高16位命令+低16位内容）
+  fromId: bigint = 0n // 发送方ID（8字节）
+  identityId: bigint = 0n // 消息标识（8字节）
+  sessionId: bigint = 0n // 目标会话ID（原toId同步为sessionId）
+  messageId: bigint = 0n // 消息ID（新增字段，与后端同步）
+  timeStamp: bigint = 0n // 时间戳（8字节）
+  length: number = 0 // 消息体长度（4字节，与后端保持一致）
+  content: Buffer = Buffer.alloc(0) // 消息体内容（原message同步为content）
 
   /**
-   * Calculate message length and update length field
+   * 计算消息体长度并更新length字段
    */
-  public calculateLength(): void {
-    this.length = this.message?.length ?? 0
+  calculateLength(): void {
+    this.length = this.content.length
   }
 
   /**
-   * Get message as string (UTF-8 decoded)
+   * 获取消息体的字符串形式（UTF-8解码）
    */
-  public getMessageString(): string {
-    return this.message?.toString('utf-8') ?? ''
+  getContentString(): string {
+    return this.content.toString('utf-8')
   }
 
   /**
-   * Set message from string (UTF-8 encoded) or Buffer
+   * 设置消息体内容（支持字符串、Buffer或Uint8Array）
    */
-  public setMessage(message: string | Buffer | Uint8Array): void {
-    if (typeof message === 'string') {
-      this.message = Buffer.from(message, 'utf-8')
-    } else if (message instanceof Uint8Array) {
-      this.message = Buffer.from(message)
+  setContent(data: string | Buffer | Uint8Array): void {
+    if (typeof data === 'string') {
+      this.content = Buffer.from(data, 'utf-8')
     } else {
-      this.message = message ?? Buffer.alloc(0)
+      this.content = Buffer.from(data)
     }
     this.calculateLength()
   }
 
   /**
-   * Get message as Buffer (ensures non-null)
+   * 设置完整类型（命令类型+内容类型）
    */
-  public getMessageBuffer(): Buffer {
-    return this.message ?? Buffer.alloc(0)
-  }
-
-  // Getters and setters
-  public getVersion(): number {
-    return this.version
-  }
-  public setVersion(version: number): void {
-    this.version = version
-  }
-
-  public getType(): number {
-    return this.type
-  }
-  public setType(type: number): void {
-    this.type = type
-  }
-
-  /**
-   * 设置完整类型（命令类型 + 内容类型）
-   */
-  public setFullType(commandType: number, contentType: number): void {
-    // 确保命令类型只占用高16位，内容类型占用低16位
-    this.type = (commandType & 0xffff0000) | (contentType & 0x0000ffff)
+  setFullType(orderType: number, contentType: number): void {
+    this.type = (orderType & 0xffff0000) | (contentType & 0x0000ffff)
   }
 
   /**
    * 获取命令类型（高16位）
    */
-  public getCommandType(): number {
+  getOrderType(): number {
     return this.type & 0xffff0000
   }
 
   /**
    * 获取内容类型（低16位）
    */
-  public getContentType(): number {
+  getContentType(): number {
     return this.type & 0x0000ffff
   }
 
-  public getFromId(): bigint {
-    return this.fromId
-  }
-  public setFromId(fromId: bigint): void {
-    this.fromId = fromId
-  }
-
-  public getToId(): bigint {
-    return this.toId
-  }
-  public setToId(toId: bigint): void {
-    this.toId = toId
-  }
-
-  public getIdentityId(): bigint {
-    return this.identityId
-  }
-  public setIdentityId(identityId: bigint): void {
-    this.identityId = identityId
-  }
-
-  public getTimeStamp(): bigint {
-    return this.timeStamp
-  }
-  public setTimeStamp(timeStamp: bigint): void {
-    this.timeStamp = timeStamp
-  }
-
-  public getLength(): number {
-    return this.length
-  }
-  public setLength(length: number): void {
-    this.length = length
-  }
-
   /**
-   * Serialize protocol to Buffer
+   * 序列化协议为Buffer（与后端字段顺序完全一致）
    */
-  public toBuffer(): Buffer {
+  toBuffer(): Buffer {
     this.calculateLength()
-
-    // Create a Buffer with exact size needed
-    const buffer = Buffer.alloc(2 + 2 + 4 + 8 + 8 + 8 + 8 + 2 + this.length)
-
+    // 固定头部长度：2+2+4+8+8+8+8+8+4 = 52字节（与后端同步）
+    const totalLength = 52 + this.length
+    const buffer = Buffer.alloc(totalLength)
     let offset = 0
 
-    // Write fields in protocol order
+    // 按后端顺序写入字段
     buffer.writeUInt16BE(Protocol.MAGIC_NUMBER, offset)
     offset += 2
     buffer.writeUInt16BE(this.version, offset)
@@ -169,135 +103,115 @@ export default class Protocol {
     offset += 4
     buffer.writeBigUInt64BE(this.fromId, offset)
     offset += 8
-    buffer.writeBigUInt64BE(this.toId, offset)
-    offset += 8
     buffer.writeBigUInt64BE(this.identityId, offset)
+    offset += 8
+    buffer.writeBigUInt64BE(this.sessionId, offset)
+    offset += 8
+    buffer.writeBigUInt64BE(this.messageId, offset)
     offset += 8
     buffer.writeBigUInt64BE(this.timeStamp, offset)
     offset += 8
-    buffer.writeUInt16BE(this.length, offset)
-    offset += 2
+    buffer.writeInt32BE(this.length, offset)
+    offset += 4
 
-    // Write message if length > 0
+    // 写入消息体
     if (this.length > 0) {
-      this.message.copy(buffer, offset, 0, this.length)
+      this.content.copy(buffer, offset, 0, this.length)
     }
 
     return buffer
   }
 
   /**
-   * Deserialize from Buffer to Protocol object
+   * 从Buffer反序列化为Protocol实例（与后端解析逻辑同步）
    */
-  public static fromBuffer(buffer: Buffer): Protocol {
+  static fromBuffer(buffer: Buffer): Protocol {
     const protocol = new Protocol()
     let offset = 0
 
-    // Verify magic number
+    // 验证魔数
     const magic = buffer.readUInt16BE(offset)
     if (magic !== Protocol.MAGIC_NUMBER) {
       throw new Error(
-        `Protocol magic number validation failed, expected: 0x${Protocol.MAGIC_NUMBER.toString(16)}, actual: 0x${magic.toString(16)}`
+        `协议魔数验证失败，预期: 0x${Protocol.MAGIC_NUMBER.toString(16)}, 实际: 0x${magic.toString(16)}`
       )
     }
     offset += 2
 
-    // Read fixed fields
-    protocol.setVersion(buffer.readUInt16BE(offset))
+    // 按后端顺序读取字段
+    protocol.version = buffer.readUInt16BE(offset)
     offset += 2
-    protocol.setType(buffer.readInt32BE(offset))
+    protocol.type = buffer.readInt32BE(offset)
     offset += 4
-    protocol.setFromId(buffer.readBigUInt64BE(offset))
+    protocol.fromId = buffer.readBigUInt64BE(offset)
     offset += 8
-    protocol.setToId(buffer.readBigUInt64BE(offset))
+    protocol.identityId = buffer.readBigUInt64BE(offset)
     offset += 8
-    protocol.setIdentityId(buffer.readBigUInt64BE(offset))
+    protocol.sessionId = buffer.readBigUInt64BE(offset)
     offset += 8
-    protocol.setTimeStamp(buffer.readBigUInt64BE(offset))
+    protocol.messageId = buffer.readBigUInt64BE(offset)
     offset += 8
-    protocol.setLength(buffer.readUInt16BE(offset))
-    offset += 2
+    protocol.timeStamp = buffer.readBigUInt64BE(offset)
+    offset += 8
+    protocol.length = buffer.readInt32BE(offset) // 长度字段改为4字节
+    offset += 4
 
-    // Read message body
-    const msgLength = protocol.getLength()
-    if (msgLength > 0) {
-      if (msgLength < 0 || offset + msgLength > buffer.length) {
+    // 读取消息体
+    if (protocol.length > 0) {
+      if (offset + protocol.length > buffer.length) {
         throw new Error(
-          `Message length abnormal, declared: ${msgLength}, available bytes: ${buffer.length - offset}`
+          `消息体长度异常，声明: ${protocol.length}, 可用字节: ${buffer.length - offset}`
         )
       }
-      protocol.setMessage(buffer.slice(offset, offset + msgLength))
-    } else {
-      protocol.setMessage(Buffer.alloc(0))
+      protocol.content = buffer.slice(offset, offset + protocol.length)
     }
 
     return protocol
   }
 }
 
-export const debugProtocal = (protocol: Protocol): void => {
-  console.log('=== Protocol Debug Info ===')
+// 命令类型映射
+export const OrderMap: Record<number, string> = {
+  [Protocol.ORDER_SYSTEM]: 'SYSTEM',
+  [Protocol.ORDER_AUTH]: 'AUTH',
+  [Protocol.ORDER_SYNC]: 'SYNC',
+  [Protocol.ORDER_MESSAGE]: 'MESSAGE',
+  [Protocol.ORDER_ACK]: 'ACK'
+}
 
-  // 基本信息
-  console.log(`Magic Number: 0x${Protocol.MAGIC_NUMBER.toString(16)}`)
-  console.log(`Version: ${protocol.getVersion()}`)
+// 内容类型映射
+export const ContentMap: Record<number, string> = {
+  [Protocol.CONTENT_FAILED]: 'FAILED',
+  [Protocol.CONTENT_EMPTY]: 'EMPTY',
+  [Protocol.CONTENT_TEXT]: 'TEXT',
+  [Protocol.CONTENT_IMAGE]: 'IMAGE',
+  [Protocol.CONTENT_AUDIO]: 'AUDIO',
+  [Protocol.CONTENT_VIDEO]: 'VIDEO',
+  [Protocol.CONTENT_OTHER_FILE]: 'OTHER_FILE',
+  [Protocol.CONTENT_LOCATION]: 'LOCATION'
+}
 
-  // 解析命令类型和内容类型
-  const commandType = protocol.getCommandType()
+/**
+ * 协议调试信息打印（与后端字段对应）
+ */
+export const debugProtocol = (protocol: Protocol): void => {
+  console.log('=== 协议调试信息 ===')
+  console.log(`魔数: 0x${Protocol.MAGIC_NUMBER.toString(16)}`)
+  console.log(`版本: ${protocol.version}`)
+
+  // 解析类型
+  const orderType = protocol.getOrderType()
   const contentType = protocol.getContentType()
 
-  let systemCmdStr = ''
-  switch (commandType) {
-    case Protocol.ORDER_SYSTEM_PUSH:
-      systemCmdStr = 'SYSTEM_PUSH'
-      break
-    case Protocol.ORDER_AUTH:
-      systemCmdStr = 'AUTH'
-      break
-    case Protocol.ORDER_SYNC:
-      systemCmdStr = 'SYNC'
-      break
-    case Protocol.ORDER_HEART_BEAT:
-      systemCmdStr = 'HEART_BEAT'
-      break
-    case Protocol.ORDER_MESSAGE:
-      systemCmdStr = 'MESSAGE'
-      break
-    default:
-      systemCmdStr = `UNKNOWN(0x${commandType.toString(16)})`
-  }
-
-  let contentTypeStr = ''
-  switch (contentType) {
-    case Protocol.CONTENT_FAILED_INFO:
-      contentTypeStr = 'FAILED_INFO'
-      break
-    case Protocol.CONTENT_TEXT:
-      contentTypeStr = 'TEXT'
-      break
-    case Protocol.CONTENT_FILE:
-      contentTypeStr = 'FILE'
-      break
-    case Protocol.CONTENT_ACK:
-      contentTypeStr = 'ACK'
-      break
-    default:
-      contentTypeStr = `UNKNOWN(0x${contentType.toString(16)})`
-  }
-
-  console.log(`Type: 0x${protocol.getType().toString(16)}`)
-  console.log(`  Command Type: 0x${commandType.toString(16)} (${systemCmdStr})`)
-  console.log(`  Content Type: 0x${contentType.toString(16)} (${contentTypeStr})`)
-
-  // ID 和时间戳（使用字符串形式显示大整数）
-  console.log(`From ID: ${protocol.getFromId().toString()}`)
-  console.log(`To ID: ${protocol.getToId().toString()}`)
-  console.log(`Timestamp: ${protocol.getTimeStamp().toString()}`)
-
-  // 消息内容
-  console.log(`Message Length: ${protocol.getLength()}`)
-  console.log(`Message Content (string): "${protocol.getMessageString()}"`)
-  // console.log(`Message Content (hex): 0x${protocol.getMessageBuffer().toString('hex')}`)
-
-  console.log('==========================')
+  console.log(`类型: 0x${protocol.type.toString(16)}`)
+  console.log(`  命令类型: 0x${orderType.toString(16)} (${OrderMap[orderType] || 'UNKNOWN'})`)
+  console.log(`  内容类型: 0x${contentType.toString(16)} (${ContentMap[contentType] || 'UNKNOWN'})`)
+  console.log(`发送方ID: ${protocol.fromId.toString()}`)
+  console.log(`消息标识: ${protocol.identityId.toString()}`)
+  console.log(`会话ID: ${protocol.sessionId.toString()}`)
+  console.log(`消息ID: ${protocol.messageId.toString()}`)
+  console.log(`时间戳: ${protocol.timeStamp.toString()}`)
+  console.log(`消息长度: ${protocol.length}`)
+  console.log(`消息内容: "${protocol.getContentString()}"`)
+  console.log('====================')
 }
