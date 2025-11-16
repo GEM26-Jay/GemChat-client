@@ -7,34 +7,16 @@ import { HandleAllSync } from '@main/tcp-client/handlers/syncHandler'
 import { dbManager } from '@main/db-manage/database'
 import localFileManager from '@main/file-manage/localFileApi'
 import { nettyClientManager } from '@main/tcp-client/client'
-import { getNettyServerAddress } from '@main/axios/axiosNettyApi'
 
 /**
  * 用户登录（基于ApiResult处理业务逻辑）
  */
 export async function doUserLogin(account: string, password: string): Promise<ApiResult<User>> {
   const loginResult: ApiResult<string> = await postUserLogin(account, password)
-  // const mock_loginResult: ApiResult<string> = { isSuccess: true }
 
   if (loginResult.isSuccess) {
     // 获取用户基本信息
     const result: ApiResult<User> = await getUserInfo(null)
-    // const mock_result: ApiResult<User> = {
-    //   isSuccess: true,
-    //   data: {
-    //     id: '356285032555347968',
-    //     username: 'admin',
-    //     maskedEmail: '1111',
-    //     maskedPhone: 'string',
-    //     avatar: 'default_avatar.png',
-    //     signature: 'string',
-    //     gender: 0,
-    //     birthdate: 'string',
-    //     status: 1,
-    //     createdAt: 12345678,
-    //     updatedAt: 12345678
-    //   }
-    // }
     if (result.isSuccess && result.data) {
       const user = result.data
       clientDataStore.set('user', user)
@@ -43,11 +25,7 @@ export async function doUserLogin(account: string, password: string): Promise<Ap
       // 初始化本地存储空间
       localFileManager.initialize(user.id)
       // 初始化TCP连接
-      const address = await getNettyServerAddress()
-      if (address.isSuccess && address.data) {
-        const [ipAddr, host] = address.data.split(':')
-        nettyClientManager.initialize(ipAddr, Number.parseInt(host))
-      }
+      nettyClientManager.start()
       // 同步所有历史消息
       HandleAllSync()
       return {
